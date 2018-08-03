@@ -50,6 +50,21 @@ function deserialize_puppet_fsm_ActionsResponse(buffer_arg) {
 }
 
 
+var GenesisService = exports.GenesisService = {
+  apply: {
+    path: '/puppet.fsm.Genesis/apply',
+    requestStream: false,
+    responseStream: false,
+    requestType: datapb_data_pb.DataHash,
+    responseType: datapb_data_pb.DataHash,
+    requestSerialize: serialize_puppet_datapb_DataHash,
+    requestDeserialize: deserialize_puppet_datapb_DataHash,
+    responseSerialize: serialize_puppet_datapb_DataHash,
+    responseDeserialize: deserialize_puppet_datapb_DataHash,
+  },
+};
+
+exports.GenesisClient = grpc.makeGenericClientConstructor(GenesisService);
 var ActorService = exports.ActorService = {
   getActions: {
     path: '/puppet.fsm.Actor/GetActions',

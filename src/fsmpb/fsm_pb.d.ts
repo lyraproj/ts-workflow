@@ -47,6 +47,9 @@ export namespace ActionsResponse {
 }
 
 export class ActionInvocation extends jspb.Message { 
+    getGenesis(): number;
+    setGenesis(value: number): void;
+
     getId(): number;
     setId(value: number): void;
 
@@ -69,6 +72,7 @@ export class ActionInvocation extends jspb.Message {
 
 export namespace ActionInvocation {
     export type AsObject = {
+        genesis: number,
         id: number,
         arguments?: datapb_data_pb.DataHash.AsObject,
     }

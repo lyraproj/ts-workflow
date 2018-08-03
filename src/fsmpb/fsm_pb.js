@@ -348,7 +348,8 @@ proto.puppet.fsm.ActionInvocation.prototype.toObject = function(opt_includeInsta
  */
 proto.puppet.fsm.ActionInvocation.toObject = function(includeInstance, msg) {
   var f, obj = {
-    id: jspb.Message.getFieldWithDefault(msg, 1, 0),
+    genesis: jspb.Message.getFieldWithDefault(msg, 1, 0),
+    id: jspb.Message.getFieldWithDefault(msg, 2, 0),
     arguments: (f = msg.getArguments()) && datapb_data_pb.DataHash.toObject(includeInstance, f)
   };
 
@@ -387,10 +388,14 @@ proto.puppet.fsm.ActionInvocation.deserializeBinaryFromReader = function(msg, re
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
+      var value = /** @type {number} */ (reader.readUint32());
+      msg.setGenesis(value);
+      break;
+    case 2:
       var value = /** @type {number} */ (reader.readInt64());
       msg.setId(value);
       break;
-    case 2:
+    case 3:
       var value = new datapb_data_pb.DataHash;
       reader.readMessage(value,datapb_data_pb.DataHash.deserializeBinaryFromReader);
       msg.setArguments(value);
@@ -424,17 +429,24 @@ proto.puppet.fsm.ActionInvocation.prototype.serializeBinary = function() {
  */
 proto.puppet.fsm.ActionInvocation.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
+  f = message.getGenesis();
+  if (f !== 0) {
+    writer.writeUint32(
+      1,
+      f
+    );
+  }
   f = message.getId();
   if (f !== 0) {
     writer.writeInt64(
-      1,
+      2,
       f
     );
   }
   f = message.getArguments();
   if (f != null) {
     writer.writeMessage(
-      2,
+      3,
       f,
       datapb_data_pb.DataHash.serializeBinaryToWriter
     );
@@ -443,33 +455,48 @@ proto.puppet.fsm.ActionInvocation.serializeBinaryToWriter = function(message, wr
 
 
 /**
- * optional int64 id = 1;
+ * optional uint32 genesis = 1;
  * @return {number}
  */
-proto.puppet.fsm.ActionInvocation.prototype.getId = function() {
+proto.puppet.fsm.ActionInvocation.prototype.getGenesis = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
 
 /** @param {number} value */
-proto.puppet.fsm.ActionInvocation.prototype.setId = function(value) {
+proto.puppet.fsm.ActionInvocation.prototype.setGenesis = function(value) {
   jspb.Message.setField(this, 1, value);
 };
 
 
 /**
- * optional puppet.datapb.DataHash arguments = 2;
+ * optional int64 id = 2;
+ * @return {number}
+ */
+proto.puppet.fsm.ActionInvocation.prototype.getId = function() {
+  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
+};
+
+
+/** @param {number} value */
+proto.puppet.fsm.ActionInvocation.prototype.setId = function(value) {
+  jspb.Message.setField(this, 2, value);
+};
+
+
+/**
+ * optional puppet.datapb.DataHash arguments = 3;
  * @return {?proto.puppet.datapb.DataHash}
  */
 proto.puppet.fsm.ActionInvocation.prototype.getArguments = function() {
   return /** @type{?proto.puppet.datapb.DataHash} */ (
-    jspb.Message.getWrapperField(this, datapb_data_pb.DataHash, 2));
+    jspb.Message.getWrapperField(this, datapb_data_pb.DataHash, 3));
 };
 
 
 /** @param {?proto.puppet.datapb.DataHash|undefined} value */
 proto.puppet.fsm.ActionInvocation.prototype.setArguments = function(value) {
-  jspb.Message.setWrapperField(this, 2, value);
+  jspb.Message.setWrapperField(this, 3, value);
 };
 
 
@@ -483,7 +510,7 @@ proto.puppet.fsm.ActionInvocation.prototype.clearArguments = function() {
  * @return {!boolean}
  */
 proto.puppet.fsm.ActionInvocation.prototype.hasArguments = function() {
-  return jspb.Message.getField(this, 2) != null;
+  return jspb.Message.getField(this, 3) != null;
 };
 
 
