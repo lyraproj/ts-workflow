@@ -118,7 +118,7 @@ export class Context {
 
         let createParams = function(values: object): Array<fsmpb.Parameter> {
             let params: Array<fsmpb.Parameter> = [];
-            for let key in values {
+            for(let key in values) {
                 let p = new fsmpb.Parameter();
                 p.setName(key);
                 p.setType(values[key]);
@@ -174,20 +174,21 @@ export class Context {
 
 var ctx = new Context();
 
-ctx.Action('a', function(input: object): object {
+ctx.Action('a', function(input: object): {a: string, b: number} {
     return { a: 'hello', b: 4 };
 }, {}, { a: 'String', b: 'Integer' } );
 
-ctx.Action('b1', function(input: object): object {
+ctx.Action('b1', function(input: {a: string, b: number}): {c: string, d: number} {
     return { c: input.a + ' world', d: input.b + 4 };
 }, { a: 'String', b: 'Integer' }, { c: 'String', d: 'Integer' } );
 
-ctx.Action('b2', function(input: object): object {
+ctx.Action('b2', function(input: {a: string, b: number}): {e: string, f: number} {
     return { e: input.a + ' earth', f: input.b + 8 };
 }, { a: 'String', b: 'Integer' }, { e: 'String', f: 'Integer' } );
 
-ctx.Action('c', function(input: object): object {
+ctx.Action('c', function(input: {c: string, d: number, e: string, f: number}): {} {
     console.log(input)
+    return {}
 }, { c: 'String', d: 'Integer', e: 'String', f: 'Integer' }, {} );
 
 ctx.start();

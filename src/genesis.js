@@ -163,5 +163,6 @@ ctx.Action('b2', function (input) {
 }, { a: 'String', b: 'Integer' }, { e: 'String', f: 'Integer' });
 ctx.Action('c', function (input) {
     console.log(input);
+    return {};
 }, { c: 'String', d: 'Integer', e: 'String', f: 'Integer' }, {});
 ctx.start();
