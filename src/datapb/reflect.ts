@@ -61,7 +61,7 @@ export function toData(value: any): datapb.Data {
       switch (value.constructor) {
       case Array:
         let a = new datapb.DataArray();
-        a.setValuesList((<Array<any>>value).map(fromData));
+        a.setValuesList((<Array<any>>value).map(toData));
         d.setArrayValue(a);
         break;
       case String:

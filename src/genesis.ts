@@ -6,32 +6,59 @@ import * as datapb from "./datapb/reflect";
 import * as health from "grpc-health-check/health";
 import {Duplex} from "stream";
 
-type ActionFunction = (genesis: Genesis, input: object) => Promise<object>;
+type ActionFunction = (genesis: Genesis, input: {}) => Promise<{}>;
 
-const GenesisServiceID = -10;
+const GenesisApply = -10;
+const GenesisLookup = -11;
+const GenesisNotice = -12;
+
+export interface Resource {
+  title : string
+}
 
 export class Genesis {
   stream: Duplex;
 
-  apply(resources: object): Promise<object> {
-    return new Promise((resolve: (result: object) => void, reject: (reason?: any) => void) => {
+  private call<T extends {}>(id : number, argsHash: {}): Promise<T> {
+    return new Promise((resolve: (result: T) => void, reject: (reason?: any) => void) => {
       try {
         let am = new fsmpb.ActionMessage();
-        am.setId(GenesisServiceID);
-        am.setArguments(datapb.toDataHash(resources));
+        am.setId(id);
+        am.setArguments(datapb.toDataHash(argsHash));
 
         let stream = this.stream;
         stream.once('data', (result: fsmpb.ActionMessage) => {
-          if (result.getId() != GenesisServiceID) {
-            throw new Error(`expected reply with id ${GenesisServiceID}, got ${result.getId()}`);
+          if (result.getId() != id) {
+            throw new Error(`expected reply with id ${id}, got ${result.getId()}`);
           }
-          resolve(datapb.fromDataHash(result.getArguments()));
+          resolve(<T>datapb.fromDataHash(result.getArguments()));
         });
         stream.write(am);
       } catch (err) {
         reject(err);
       }
     });
+  }
+
+  apply<T extends Resource>(resource: T): Promise<T> {
+    return this.call<T>(GenesisApply, resource)
+  }
+
+  async lookup(keys: string | Array<string>): Promise<any> {
+    let singleton = false;
+    if(!(typeof keys == 'object' && keys.constructor == Array)) {
+      keys = [<string>keys];
+      singleton = true;
+    }
+    let result = await this.call<{ value: any }>(GenesisLookup, { keys: keys });
+    return singleton ? result[keys[0]] : result;
+  }
+
+  notice(message: string): void {
+    let am = new fsmpb.ActionMessage();
+    am.setId(GenesisNotice);
+    am.setArguments(datapb.toDataHash({message: message}));
+    this.stream.write(am);
   }
 
   constructor(stream: Duplex) {
@@ -45,8 +72,8 @@ export class Actor {
   actions: Array<fsmpb.Action>;
   actionFunctions: Array<ActionFunction>;
 
-  Action(name: string, func: ActionFunction, consumes: object, produces: object): void {
-    let createParams = (values: object): Array<fsmpb.Parameter> => {
+  Action(name: string, func: ActionFunction, consumes: {}, produces: {}): void {
+    let createParams = (values: {}): Array<fsmpb.Parameter> => {
       let params: Array<fsmpb.Parameter> = [];
       for (let key in values) {
         if (values.hasOwnProperty(key)) {
@@ -76,7 +103,7 @@ export class Actor {
     }
     let args = datapb.fromDataHash(am.getArguments());
     let genesis = new Genesis(stream);
-    funcs[id](genesis, args).then((result: object) => {
+    funcs[id](genesis, args).then((result: {}) => {
       am.setArguments(datapb.toDataHash(result));
       stream.write(am);
     });

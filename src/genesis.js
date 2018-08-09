@@ -1,22 +1,32 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const grpc = require("grpc");
 const fsmpb = require("./fsmpb/fsm_pb");
 const fsm_grpc = require("./fsmpb/fsm_grpc_pb");
 const datapb = require("./datapb/reflect");
 const health = require("grpc-health-check/health");
-const GenesisServiceID = -10;
+const GenesisApply = -10;
+const GenesisLookup = -11;
+const GenesisNotice = -12;
 class Genesis {
-    apply(resources) {
+    call(id, argsHash) {
         return new Promise((resolve, reject) => {
             try {
                 let am = new fsmpb.ActionMessage();
-                am.setId(GenesisServiceID);
-                am.setArguments(datapb.toDataHash(resources));
+                am.setId(id);
+                am.setArguments(datapb.toDataHash(argsHash));
                 let stream = this.stream;
                 stream.once('data', (result) => {
-                    if (result.getId() != GenesisServiceID) {
-                        throw new Error(`expected reply with id ${GenesisServiceID}, got ${result.getId()}`);
+                    if (result.getId() != id) {
+                        throw new Error(`expected reply with id ${id}, got ${result.getId()}`);
                     }
                     resolve(datapb.fromDataHash(result.getArguments()));
                 });
@@ -26,6 +36,26 @@ class Genesis {
                 reject(err);
             }
         });
+    }
+    apply(resource) {
+        return this.call(GenesisApply, resource);
+    }
+    lookup(keys) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let singleton = false;
+            if (!(typeof keys == 'object' && keys.constructor == Array)) {
+                keys = [keys];
+                singleton = true;
+            }
+            let result = yield this.call(GenesisLookup, { keys: keys });
+            return singleton ? result[keys[0]] : result;
+        });
+    }
+    notice(message) {
+        let am = new fsmpb.ActionMessage();
+        am.setId(GenesisNotice);
+        am.setArguments(datapb.toDataHash({ message: message }));
+        this.stream.write(am);
     }
     constructor(stream) {
         this.stream = stream;
