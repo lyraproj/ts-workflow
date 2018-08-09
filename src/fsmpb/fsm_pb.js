@@ -13,7 +13,7 @@ var global = Function('return this')();
 
 var datapb_data_pb = require('../datapb/data_pb.js');
 goog.exportSymbol('proto.puppet.fsm.Action', null, global);
-goog.exportSymbol('proto.puppet.fsm.ActionInvocation', null, global);
+goog.exportSymbol('proto.puppet.fsm.ActionMessage', null, global);
 goog.exportSymbol('proto.puppet.fsm.ActionsRequest', null, global);
 goog.exportSymbol('proto.puppet.fsm.ActionsResponse', null, global);
 goog.exportSymbol('proto.puppet.fsm.Parameter', null, global);
@@ -312,12 +312,12 @@ proto.puppet.fsm.ActionsResponse.prototype.clearActionsList = function() {
  * @extends {jspb.Message}
  * @constructor
  */
-proto.puppet.fsm.ActionInvocation = function(opt_data) {
+proto.puppet.fsm.ActionMessage = function(opt_data) {
   jspb.Message.initialize(this, opt_data, 0, -1, null, null);
 };
-goog.inherits(proto.puppet.fsm.ActionInvocation, jspb.Message);
+goog.inherits(proto.puppet.fsm.ActionMessage, jspb.Message);
 if (goog.DEBUG && !COMPILED) {
-  proto.puppet.fsm.ActionInvocation.displayName = 'proto.puppet.fsm.ActionInvocation';
+  proto.puppet.fsm.ActionMessage.displayName = 'proto.puppet.fsm.ActionMessage';
 }
 
 
@@ -332,8 +332,8 @@ if (jspb.Message.GENERATE_TO_OBJECT) {
  *     for transitional soy proto support: http://goto/soy-param-migration
  * @return {!Object}
  */
-proto.puppet.fsm.ActionInvocation.prototype.toObject = function(opt_includeInstance) {
-  return proto.puppet.fsm.ActionInvocation.toObject(opt_includeInstance, this);
+proto.puppet.fsm.ActionMessage.prototype.toObject = function(opt_includeInstance) {
+  return proto.puppet.fsm.ActionMessage.toObject(opt_includeInstance, this);
 };
 
 
@@ -342,14 +342,13 @@ proto.puppet.fsm.ActionInvocation.prototype.toObject = function(opt_includeInsta
  * @param {boolean|undefined} includeInstance Whether to include the JSPB
  *     instance for transitional soy proto support:
  *     http://goto/soy-param-migration
- * @param {!proto.puppet.fsm.ActionInvocation} msg The msg instance to transform.
+ * @param {!proto.puppet.fsm.ActionMessage} msg The msg instance to transform.
  * @return {!Object}
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
-proto.puppet.fsm.ActionInvocation.toObject = function(includeInstance, msg) {
+proto.puppet.fsm.ActionMessage.toObject = function(includeInstance, msg) {
   var f, obj = {
-    genesis: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    id: jspb.Message.getFieldWithDefault(msg, 2, 0),
+    id: jspb.Message.getFieldWithDefault(msg, 1, 0),
     arguments: (f = msg.getArguments()) && datapb_data_pb.DataHash.toObject(includeInstance, f)
   };
 
@@ -364,23 +363,23 @@ proto.puppet.fsm.ActionInvocation.toObject = function(includeInstance, msg) {
 /**
  * Deserializes binary data (in protobuf wire format).
  * @param {jspb.ByteSource} bytes The bytes to deserialize.
- * @return {!proto.puppet.fsm.ActionInvocation}
+ * @return {!proto.puppet.fsm.ActionMessage}
  */
-proto.puppet.fsm.ActionInvocation.deserializeBinary = function(bytes) {
+proto.puppet.fsm.ActionMessage.deserializeBinary = function(bytes) {
   var reader = new jspb.BinaryReader(bytes);
-  var msg = new proto.puppet.fsm.ActionInvocation;
-  return proto.puppet.fsm.ActionInvocation.deserializeBinaryFromReader(msg, reader);
+  var msg = new proto.puppet.fsm.ActionMessage;
+  return proto.puppet.fsm.ActionMessage.deserializeBinaryFromReader(msg, reader);
 };
 
 
 /**
  * Deserializes binary data (in protobuf wire format) from the
  * given reader into the given message object.
- * @param {!proto.puppet.fsm.ActionInvocation} msg The message object to deserialize into.
+ * @param {!proto.puppet.fsm.ActionMessage} msg The message object to deserialize into.
  * @param {!jspb.BinaryReader} reader The BinaryReader to use.
- * @return {!proto.puppet.fsm.ActionInvocation}
+ * @return {!proto.puppet.fsm.ActionMessage}
  */
-proto.puppet.fsm.ActionInvocation.deserializeBinaryFromReader = function(msg, reader) {
+proto.puppet.fsm.ActionMessage.deserializeBinaryFromReader = function(msg, reader) {
   while (reader.nextField()) {
     if (reader.isEndGroup()) {
       break;
@@ -388,14 +387,10 @@ proto.puppet.fsm.ActionInvocation.deserializeBinaryFromReader = function(msg, re
     var field = reader.getFieldNumber();
     switch (field) {
     case 1:
-      var value = /** @type {number} */ (reader.readUint32());
-      msg.setGenesis(value);
-      break;
-    case 2:
       var value = /** @type {number} */ (reader.readInt64());
       msg.setId(value);
       break;
-    case 3:
+    case 2:
       var value = new datapb_data_pb.DataHash;
       reader.readMessage(value,datapb_data_pb.DataHash.deserializeBinaryFromReader);
       msg.setArguments(value);
@@ -413,9 +408,9 @@ proto.puppet.fsm.ActionInvocation.deserializeBinaryFromReader = function(msg, re
  * Serializes the message to binary data (in protobuf wire format).
  * @return {!Uint8Array}
  */
-proto.puppet.fsm.ActionInvocation.prototype.serializeBinary = function() {
+proto.puppet.fsm.ActionMessage.prototype.serializeBinary = function() {
   var writer = new jspb.BinaryWriter();
-  proto.puppet.fsm.ActionInvocation.serializeBinaryToWriter(this, writer);
+  proto.puppet.fsm.ActionMessage.serializeBinaryToWriter(this, writer);
   return writer.getResultBuffer();
 };
 
@@ -423,30 +418,23 @@ proto.puppet.fsm.ActionInvocation.prototype.serializeBinary = function() {
 /**
  * Serializes the given message to binary data (in protobuf wire
  * format), writing to the given BinaryWriter.
- * @param {!proto.puppet.fsm.ActionInvocation} message
+ * @param {!proto.puppet.fsm.ActionMessage} message
  * @param {!jspb.BinaryWriter} writer
  * @suppress {unusedLocalVariables} f is only used for nested messages
  */
-proto.puppet.fsm.ActionInvocation.serializeBinaryToWriter = function(message, writer) {
+proto.puppet.fsm.ActionMessage.serializeBinaryToWriter = function(message, writer) {
   var f = undefined;
-  f = message.getGenesis();
-  if (f !== 0) {
-    writer.writeUint32(
-      1,
-      f
-    );
-  }
   f = message.getId();
   if (f !== 0) {
     writer.writeInt64(
-      2,
+      1,
       f
     );
   }
   f = message.getArguments();
   if (f != null) {
     writer.writeMessage(
-      3,
+      2,
       f,
       datapb_data_pb.DataHash.serializeBinaryToWriter
     );
@@ -455,52 +443,37 @@ proto.puppet.fsm.ActionInvocation.serializeBinaryToWriter = function(message, wr
 
 
 /**
- * optional uint32 genesis = 1;
+ * optional int64 id = 1;
  * @return {number}
  */
-proto.puppet.fsm.ActionInvocation.prototype.getGenesis = function() {
+proto.puppet.fsm.ActionMessage.prototype.getId = function() {
   return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 1, 0));
 };
 
 
 /** @param {number} value */
-proto.puppet.fsm.ActionInvocation.prototype.setGenesis = function(value) {
+proto.puppet.fsm.ActionMessage.prototype.setId = function(value) {
   jspb.Message.setField(this, 1, value);
 };
 
 
 /**
- * optional int64 id = 2;
- * @return {number}
- */
-proto.puppet.fsm.ActionInvocation.prototype.getId = function() {
-  return /** @type {number} */ (jspb.Message.getFieldWithDefault(this, 2, 0));
-};
-
-
-/** @param {number} value */
-proto.puppet.fsm.ActionInvocation.prototype.setId = function(value) {
-  jspb.Message.setField(this, 2, value);
-};
-
-
-/**
- * optional puppet.datapb.DataHash arguments = 3;
+ * optional puppet.datapb.DataHash arguments = 2;
  * @return {?proto.puppet.datapb.DataHash}
  */
-proto.puppet.fsm.ActionInvocation.prototype.getArguments = function() {
+proto.puppet.fsm.ActionMessage.prototype.getArguments = function() {
   return /** @type{?proto.puppet.datapb.DataHash} */ (
-    jspb.Message.getWrapperField(this, datapb_data_pb.DataHash, 3));
+    jspb.Message.getWrapperField(this, datapb_data_pb.DataHash, 2));
 };
 
 
 /** @param {?proto.puppet.datapb.DataHash|undefined} value */
-proto.puppet.fsm.ActionInvocation.prototype.setArguments = function(value) {
-  jspb.Message.setWrapperField(this, 3, value);
+proto.puppet.fsm.ActionMessage.prototype.setArguments = function(value) {
+  jspb.Message.setWrapperField(this, 2, value);
 };
 
 
-proto.puppet.fsm.ActionInvocation.prototype.clearArguments = function() {
+proto.puppet.fsm.ActionMessage.prototype.clearArguments = function() {
   this.setArguments(undefined);
 };
 
@@ -509,8 +482,8 @@ proto.puppet.fsm.ActionInvocation.prototype.clearArguments = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.puppet.fsm.ActionInvocation.prototype.hasArguments = function() {
-  return jspb.Message.getField(this, 3) != null;
+proto.puppet.fsm.ActionMessage.prototype.hasArguments = function() {
+  return jspb.Message.getField(this, 2) != null;
 };
 
 

@@ -46,10 +46,7 @@ export namespace ActionsResponse {
     }
 }
 
-export class ActionInvocation extends jspb.Message { 
-    getGenesis(): number;
-    setGenesis(value: number): void;
-
+export class ActionMessage extends jspb.Message { 
     getId(): number;
     setId(value: number): void;
 
@@ -61,18 +58,17 @@ export class ActionInvocation extends jspb.Message {
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ActionInvocation.AsObject;
-    static toObject(includeInstance: boolean, msg: ActionInvocation): ActionInvocation.AsObject;
+    toObject(includeInstance?: boolean): ActionMessage.AsObject;
+    static toObject(includeInstance: boolean, msg: ActionMessage): ActionMessage.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ActionInvocation, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ActionInvocation;
-    static deserializeBinaryFromReader(message: ActionInvocation, reader: jspb.BinaryReader): ActionInvocation;
+    static serializeBinaryToWriter(message: ActionMessage, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ActionMessage;
+    static deserializeBinaryFromReader(message: ActionMessage, reader: jspb.BinaryReader): ActionMessage;
 }
 
-export namespace ActionInvocation {
+export namespace ActionMessage {
     export type AsObject = {
-        genesis: number,
         id: number,
         arguments?: datapb_data_pb.DataHash.AsObject,
     }

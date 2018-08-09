@@ -5,26 +5,15 @@ var grpc = require('grpc');
 var fsmpb_fsm_pb = require('../fsmpb/fsm_pb.js');
 var datapb_data_pb = require('../datapb/data_pb.js');
 
-function serialize_puppet_datapb_DataHash(arg) {
-  if (!(arg instanceof datapb_data_pb.DataHash)) {
-    throw new Error('Expected argument of type puppet.datapb.DataHash');
+function serialize_puppet_fsm_ActionMessage(arg) {
+  if (!(arg instanceof fsmpb_fsm_pb.ActionMessage)) {
+    throw new Error('Expected argument of type puppet.fsm.ActionMessage');
   }
   return new Buffer(arg.serializeBinary());
 }
 
-function deserialize_puppet_datapb_DataHash(buffer_arg) {
-  return datapb_data_pb.DataHash.deserializeBinary(new Uint8Array(buffer_arg));
-}
-
-function serialize_puppet_fsm_ActionInvocation(arg) {
-  if (!(arg instanceof fsmpb_fsm_pb.ActionInvocation)) {
-    throw new Error('Expected argument of type puppet.fsm.ActionInvocation');
-  }
-  return new Buffer(arg.serializeBinary());
-}
-
-function deserialize_puppet_fsm_ActionInvocation(buffer_arg) {
-  return fsmpb_fsm_pb.ActionInvocation.deserializeBinary(new Uint8Array(buffer_arg));
+function deserialize_puppet_fsm_ActionMessage(buffer_arg) {
+  return fsmpb_fsm_pb.ActionMessage.deserializeBinary(new Uint8Array(buffer_arg));
 }
 
 function serialize_puppet_fsm_ActionsRequest(arg) {
@@ -50,21 +39,6 @@ function deserialize_puppet_fsm_ActionsResponse(buffer_arg) {
 }
 
 
-var GenesisService = exports.GenesisService = {
-  apply: {
-    path: '/puppet.fsm.Genesis/apply',
-    requestStream: false,
-    responseStream: false,
-    requestType: datapb_data_pb.DataHash,
-    responseType: datapb_data_pb.DataHash,
-    requestSerialize: serialize_puppet_datapb_DataHash,
-    requestDeserialize: deserialize_puppet_datapb_DataHash,
-    responseSerialize: serialize_puppet_datapb_DataHash,
-    responseDeserialize: deserialize_puppet_datapb_DataHash,
-  },
-};
-
-exports.GenesisClient = grpc.makeGenericClientConstructor(GenesisService);
 var ActorService = exports.ActorService = {
   getActions: {
     path: '/puppet.fsm.Actor/GetActions',
@@ -79,14 +53,14 @@ var ActorService = exports.ActorService = {
   },
   invokeAction: {
     path: '/puppet.fsm.Actor/InvokeAction',
-    requestStream: false,
-    responseStream: false,
-    requestType: fsmpb_fsm_pb.ActionInvocation,
-    responseType: datapb_data_pb.DataHash,
-    requestSerialize: serialize_puppet_fsm_ActionInvocation,
-    requestDeserialize: deserialize_puppet_fsm_ActionInvocation,
-    responseSerialize: serialize_puppet_datapb_DataHash,
-    responseDeserialize: deserialize_puppet_datapb_DataHash,
+    requestStream: true,
+    responseStream: true,
+    requestType: fsmpb_fsm_pb.ActionMessage,
+    responseType: fsmpb_fsm_pb.ActionMessage,
+    requestSerialize: serialize_puppet_fsm_ActionMessage,
+    requestDeserialize: deserialize_puppet_fsm_ActionMessage,
+    responseSerialize: serialize_puppet_fsm_ActionMessage,
+    responseDeserialize: deserialize_puppet_fsm_ActionMessage,
   },
 };
 
