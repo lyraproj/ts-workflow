@@ -106,15 +106,15 @@ export class Action extends jspb.Message {
     getName(): string;
     setName(value: string): void;
 
-    clearConsumesList(): void;
-    getConsumesList(): Array<Parameter>;
-    setConsumesList(value: Array<Parameter>): void;
-    addConsumes(value?: Parameter, index?: number): Parameter;
+    clearInputList(): void;
+    getInputList(): Array<Parameter>;
+    setInputList(value: Array<Parameter>): void;
+    addInput(value?: Parameter, index?: number): Parameter;
 
-    clearProducesList(): void;
-    getProducesList(): Array<Parameter>;
-    setProducesList(value: Array<Parameter>): void;
-    addProduces(value?: Parameter, index?: number): Parameter;
+    clearOutputList(): void;
+    getOutputList(): Array<Parameter>;
+    setOutputList(value: Array<Parameter>): void;
+    addOutput(value?: Parameter, index?: number): Parameter;
 
 
     serializeBinary(): Uint8Array;
@@ -131,7 +131,7 @@ export namespace Action {
     export type AsObject = {
         id: number,
         name: string,
-        consumesList: Array<Parameter.AsObject>,
-        producesList: Array<Parameter.AsObject>,
+        inputList: Array<Parameter.AsObject>,
+        outputList: Array<Parameter.AsObject>,
     }
 }

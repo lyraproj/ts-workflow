@@ -24,7 +24,7 @@ const attach = new Actor({
       genesis.notice(`Created VPC: ${result.vpc_id}`);
       return {vpc_id: result.vpc_id};
     },
-    produces: {vpc_id: 'string'}
+    output: {vpc_id: 'string'}
   }),
 
   subnet: new Action({
@@ -41,8 +41,8 @@ const attach = new Actor({
       genesis.notice(`Created Subnet: ${result.subnet_id}`);
       return {subnet_id: result.subnet_id};
     },
-    consumes: {vpc_id: 'string'},
-    produces: {subnet_id: 'string'}
+    input: {vpc_id: 'string'},
+    output: {subnet_id: 'string'}
   }),
 
   gw: new Action({
@@ -56,7 +56,7 @@ const attach = new Actor({
       genesis.notice(`Created Internet Gateway: ${result.internet_gateway_id}`);
       return {internet_gateway_id: result.internet_gateway_id};
     },
-    produces: {internet_gateway_id: 'string'}
+    output: {internet_gateway_id: 'string'}
   })
 });
 

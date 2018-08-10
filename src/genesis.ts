@@ -75,13 +75,13 @@ type StringMap = { [s: string]: string };
 
 export class Action {
   readonly callback: ActionFunction;
-  readonly consumes: StringMap;
-  readonly produces: StringMap;
+  readonly input: StringMap;
+  readonly output: StringMap;
 
-  constructor({callback, consumes = {}, produces = {}}: { callback: ActionFunction, consumes?: StringMap, produces?: StringMap }) {
+  constructor({callback, input = {}, output = {}}: { callback: ActionFunction, input?: StringMap, output?: StringMap }) {
     this.callback = callback;
-    this.consumes = consumes;
-    this.produces = produces;
+    this.input = input;
+    this.output = output;
   }
 
   private static createParams(values: {}): Array<fsmpb.Parameter> {
@@ -101,8 +101,8 @@ export class Action {
     let a = new fsmpb.Action();
     a.setId(id);
     a.setName(name);
-    a.setConsumesList(Action.createParams(this.consumes));
-    a.setProducesList(Action.createParams(this.produces));
+    a.setInputList(Action.createParams(this.input));
+    a.setOutputList(Action.createParams(this.output));
     return a;
   }
 }

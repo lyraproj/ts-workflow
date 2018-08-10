@@ -69,10 +69,10 @@ class Context {
 }
 exports.Context = Context;
 class Action {
-    constructor({ callback, consumes = {}, produces = {} }) {
+    constructor({ callback, input = {}, output = {} }) {
         this.callback = callback;
-        this.consumes = consumes;
-        this.produces = produces;
+        this.input = input;
+        this.output = output;
     }
     static createParams(values) {
         let params = [];
@@ -90,8 +90,8 @@ class Action {
         let a = new fsmpb.Action();
         a.setId(id);
         a.setName(name);
-        a.setConsumesList(Action.createParams(this.consumes));
-        a.setProducesList(Action.createParams(this.produces));
+        a.setInputList(Action.createParams(this.input));
+        a.setOutputList(Action.createParams(this.output));
         return a;
     }
 }
