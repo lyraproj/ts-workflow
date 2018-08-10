@@ -6,20 +6,25 @@ import * as datapb from "./datapb/reflect";
 import * as health from "grpc-health-check/health";
 import {Duplex} from "stream";
 
-type ActionFunction = (genesis: Genesis, input: {}) => Promise<{}>;
 
 const GenesisApply = -10;
 const GenesisLookup = -11;
 const GenesisNotice = -12;
 
-export interface Resource {
-  title : string
+type ActionFunction = (genesis: Context, input: {}) => Promise<{}>;
+
+export abstract class Resource {
+  readonly title: string;
+
+  protected constructor({title}: { title: string }) {
+    this.title = title
+  }
 }
 
-export class Genesis {
-  stream: Duplex;
+export class Context {
+  private stream: Duplex;
 
-  private call<T extends {}>(id : number, argsHash: {}): Promise<T> {
+  private call<T extends {}>(id: number, argsHash: {}): Promise<T> {
     return new Promise((resolve: (result: T) => void, reject: (reason?: any) => void) => {
       try {
         let am = new fsmpb.ActionMessage();
@@ -46,11 +51,11 @@ export class Genesis {
 
   async lookup(keys: string | Array<string>): Promise<any> {
     let singleton = false;
-    if(!(typeof keys == 'object' && keys.constructor == Array)) {
+    if (!(typeof keys == 'object' && keys.constructor == Array)) {
       keys = [<string>keys];
       singleton = true;
     }
-    let result = await this.call<{ value: any }>(GenesisLookup, { keys: keys });
+    let result = await this.call<{ value: any }>(GenesisLookup, {keys: keys});
     return singleton ? result[keys[0]] : result;
   }
 
@@ -66,44 +71,57 @@ export class Genesis {
   }
 }
 
+type StringMap = { [s: string]: string };
+
+export class Action {
+  readonly callback: ActionFunction;
+  readonly consumes: StringMap;
+  readonly produces: StringMap;
+
+  constructor({callback, consumes = {}, produces = {}}: { callback: ActionFunction, consumes?: StringMap, produces?: StringMap }) {
+    this.callback = callback;
+    this.consumes = consumes;
+    this.produces = produces;
+  }
+
+  private static createParams(values: {}): Array<fsmpb.Parameter> {
+    let params: Array<fsmpb.Parameter> = [];
+    for (let key in values) {
+      if (values.hasOwnProperty(key)) {
+        let p = new fsmpb.Parameter();
+        p.setName(key);
+        p.setType(values[key]);
+        params.push(p);
+      }
+    }
+    return params;
+  }
+
+  pbAction(id: number, name: string): fsmpb.Action {
+    let a = new fsmpb.Action();
+    a.setId(id);
+    a.setName(name);
+    a.setConsumesList(Action.createParams(this.consumes));
+    a.setProducesList(Action.createParams(this.produces));
+    return a;
+  }
+}
+
 export class Actor {
   server: grpc.Server;
 
   actions: Array<fsmpb.Action>;
   actionFunctions: Array<ActionFunction>;
 
-  Action(name: string, func: ActionFunction, consumes: {}, produces: {}): void {
-    let createParams = (values: {}): Array<fsmpb.Parameter> => {
-      let params: Array<fsmpb.Parameter> = [];
-      for (let key in values) {
-        if (values.hasOwnProperty(key)) {
-          let p = new fsmpb.Parameter();
-          p.setName(key);
-          p.setType(values[key]);
-          params.push(p);
-        }
-      }
-      return params;
-    };
-
-    let a = new fsmpb.Action();
-    a.setId(this.actions.length);
-    a.setName(name);
-    a.setConsumesList(createParams(consumes));
-    a.setProducesList(createParams(produces));
-    this.actions.push(a);
-    this.actionFunctions.push(func);
-  }
-
   invokeAction(am: fsmpb.ActionMessage, stream: Duplex) {
     let id = am.getId();
-    let funcs = this.actionFunctions;
-    if (id < 0 || id >= funcs.length) {
-      throw new Error(`expected action id to be between 0 and ${funcs.length}, got ${id}`)
+    let functions = this.actionFunctions;
+    if (id < 0 || id >= functions.length) {
+      throw new Error(`expected action id to be between 0 and ${functions.length}, got ${id}`)
     }
     let args = datapb.fromDataHash(am.getArguments());
-    let genesis = new Genesis(stream);
-    funcs[id](genesis, args).then((result: {}) => {
+    let genesis = new Context(stream);
+    functions[id](genesis, args).then((result: {}) => {
       am.setArguments(datapb.toDataHash(result));
       stream.write(am);
     });
@@ -121,12 +139,17 @@ export class Actor {
     this.server.start();
   }
 
-  constructor() {
+  constructor(actions: { [name: string]: Action }) {
     this.actions = [];
     this.actionFunctions = [];
+    for (let key in actions) {
+      let action = actions[key];
+      this.actions.push(action.pbAction(this.actions.length, key));
+      this.actionFunctions.push(action.callback);
+    }
     this.server = new grpc.Server();
     this.server.addService(fsm_grpc.ActorService, {
-      getActions: (call, callback) => {
+      getActions  : (call, callback) => {
         callback(null, this.getActions())
       },
       invokeAction: (call: Duplex) => {
@@ -141,3 +164,4 @@ export class Actor {
     this.server.addService(health.service, new health.Implementation({plugin: 'SERVING'}));
   }
 }
+

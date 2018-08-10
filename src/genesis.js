@@ -16,7 +16,13 @@ const health = require("grpc-health-check/health");
 const GenesisApply = -10;
 const GenesisLookup = -11;
 const GenesisNotice = -12;
-class Genesis {
+class Resource {
+    constructor({ title }) {
+        this.title = title;
+    }
+}
+exports.Resource = Resource;
+class Context {
     call(id, argsHash) {
         return new Promise((resolve, reject) => {
             try {
@@ -61,38 +67,45 @@ class Genesis {
         this.stream = stream;
     }
 }
-exports.Genesis = Genesis;
-class Actor {
-    Action(name, func, consumes, produces) {
-        let createParams = (values) => {
-            let params = [];
-            for (let key in values) {
-                if (values.hasOwnProperty(key)) {
-                    let p = new fsmpb.Parameter();
-                    p.setName(key);
-                    p.setType(values[key]);
-                    params.push(p);
-                }
-            }
-            return params;
-        };
-        let a = new fsmpb.Action();
-        a.setId(this.actions.length);
-        a.setName(name);
-        a.setConsumesList(createParams(consumes));
-        a.setProducesList(createParams(produces));
-        this.actions.push(a);
-        this.actionFunctions.push(func);
+exports.Context = Context;
+class Action {
+    constructor({ callback, consumes = {}, produces = {} }) {
+        this.callback = callback;
+        this.consumes = consumes;
+        this.produces = produces;
     }
+    static createParams(values) {
+        let params = [];
+        for (let key in values) {
+            if (values.hasOwnProperty(key)) {
+                let p = new fsmpb.Parameter();
+                p.setName(key);
+                p.setType(values[key]);
+                params.push(p);
+            }
+        }
+        return params;
+    }
+    pbAction(id, name) {
+        let a = new fsmpb.Action();
+        a.setId(id);
+        a.setName(name);
+        a.setConsumesList(Action.createParams(this.consumes));
+        a.setProducesList(Action.createParams(this.produces));
+        return a;
+    }
+}
+exports.Action = Action;
+class Actor {
     invokeAction(am, stream) {
         let id = am.getId();
-        let funcs = this.actionFunctions;
-        if (id < 0 || id >= funcs.length) {
-            throw new Error(`expected action id to be between 0 and ${funcs.length}, got ${id}`);
+        let functions = this.actionFunctions;
+        if (id < 0 || id >= functions.length) {
+            throw new Error(`expected action id to be between 0 and ${functions.length}, got ${id}`);
         }
         let args = datapb.fromDataHash(am.getArguments());
-        let genesis = new Genesis(stream);
-        funcs[id](genesis, args).then((result) => {
+        let genesis = new Context(stream);
+        functions[id](genesis, args).then((result) => {
             am.setArguments(datapb.toDataHash(result));
             stream.write(am);
         });
@@ -107,9 +120,14 @@ class Actor {
         console.log("1|1|tcp|0.0.0.0:50051|grpc");
         this.server.start();
     }
-    constructor() {
+    constructor(actions) {
         this.actions = [];
         this.actionFunctions = [];
+        for (let key in actions) {
+            let action = actions[key];
+            this.actions.push(action.pbAction(this.actions.length, key));
+            this.actionFunctions.push(action.callback);
+        }
         this.server = new grpc.Server();
         this.server.addService(fsm_grpc.ActorService, {
             getActions: (call, callback) => {
