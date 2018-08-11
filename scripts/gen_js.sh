@@ -5,8 +5,8 @@ HASHICORP_PATH=${GOPATH}/src/github.com/hashicorp
 PROTO_PATH=fsmpb/fsm.proto
 
 grpc_tools_node_protoc \
---js_out=import_style=commonjs,binary:src \
---grpc_out=src \
+--js_out=import_style=commonjs,binary:dist/src \
+--grpc_out=dist/src \
 --plugin=protoc-gen-grpc=`which grpc_tools_node_protoc_plugin` \
 -I $PUPPET_PATH/data-protobuf:$PUPPET_PATH/go-fsm \
 datapb/data.proto fsmpb/fsm.proto

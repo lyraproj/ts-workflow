@@ -5,7 +5,7 @@ import * as fsm_grpc from "./fsmpb/fsm_grpc_pb";
 import * as datapb from "./datapb/reflect";
 import * as health from "grpc-health-check/health";
 import {Duplex} from "stream";
-
+import {toPuppetType} from "./puppet_types";
 
 const GenesisApply = -10;
 const GenesisLookup = -11;
@@ -84,13 +84,17 @@ export class Action {
     this.output = output;
   }
 
+  private static convertType(t : string) : string {
+    return toPuppetType(t);
+  }
+
   private static createParams(values: {}): Array<fsmpb.Parameter> {
     let params: Array<fsmpb.Parameter> = [];
     for (let key in values) {
       if (values.hasOwnProperty(key)) {
         let p = new fsmpb.Parameter();
         p.setName(key);
-        p.setType(values[key]);
+        p.setType(this.convertType(values[key]));
         params.push(p);
       }
     }

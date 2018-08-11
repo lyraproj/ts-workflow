@@ -1,14 +1,14 @@
 import * as datapb from "./data_pb";
 
-export function fromDataHash(dataHash: datapb.DataHash): object {
-  let hash = {};
+export function fromDataHash(dataHash: datapb.DataHash): { [s: string]: any } {
+  let hash: {[s: string]: any } = {};
   dataHash.getEntriesList().forEach(function (entry: datapb.DataEntry) {
     hash[entry.getKey()] = fromData(entry.getValue());
   });
   return hash;
 }
 
-function fromData(data: datapb.Data): any {
+export function fromData(data: datapb.Data): any {
   switch (data.getKindCase().valueOf()) {
   case datapb.Data.KindCase.BOOLEAN_VALUE:
     return data.getBooleanValue();
@@ -26,7 +26,7 @@ function fromData(data: datapb.Data): any {
   return null;
 }
 
-export function toDataHash(value: object): datapb.DataHash {
+export function toDataHash(value: { [s: string]: any }): datapb.DataHash {
   let entries: Array<datapb.DataEntry> = [];
   for (let key in value) {
     if (value.hasOwnProperty(key)) {
@@ -73,7 +73,7 @@ export function toData(value: any): datapb.Data {
         d.setUndefValue(null);
         break;
       default:
-        d.setHashValue(toDataHash(<object>value));
+        d.setHashValue(toDataHash(<{}>value));
       }
     }
     break;

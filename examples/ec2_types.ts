@@ -1,4 +1,4 @@
-import * as genesis from "../genesis";
+import * as genesis from "../src/genesis";
 
 // Types generated based on typeset from provider
 export namespace Genesis {

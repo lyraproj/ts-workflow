@@ -1,5 +1,5 @@
-import {Actor,Action,Context} from "../genesis";
 import {Genesis} from "./ec2_types";
+import {Actor,Action,Context} from "../src/genesis";
 
 const region = 'eu-west-1';
 const tags = {
