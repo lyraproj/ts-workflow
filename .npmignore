@@ -2,3 +2,4 @@
 !dist/**/*
 examples/
 dist/examples/
+__tests__

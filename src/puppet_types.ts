@@ -157,15 +157,65 @@ function transformTupleType(tn : ts.TupleTypeNode) : string {
  * @param ut
  */
 function transformUnionType(ut : ts.UnionTypeNode) : string {
-  let name = 'Variant[';
+  // Union of string literals is an Enum
   let types = ut.types;
-  for(let i = 0; i < types.length; i++) {
+  let count = types.length;
+  let strings : string[] = [];
+  let others : ts.TypeNode[] = [];
+
+  for(let i = 0; i < count; i++) {
+    let t = types[i];
+    if(ts.isLiteralTypeNode(t)) {
+      let lt = <ts.LiteralTypeNode>t;
+      if(ts.isStringLiteral(lt.literal)) {
+        strings.push((<ts.LiteralExpression>lt.literal).text);
+        continue;
+      }
+    }
+    others.push(t);
+  }
+
+  if(others.length > 0) {
+    let name = 'Variant[';
+    let first = true;
+    if(strings.length > 0) {
+      name += transformEnum(strings);
+      first = false;
+    }
+    for(let i = 0; i < count; i++) {
+      if(first) {
+        first = false;
+      } else {
+        name += ',';
+      }
+      name += transformType(types[i]);
+    }
+    return name + ']';
+  }
+  return transformEnum(strings);
+}
+
+function transformEnum(enums : string[]) : string {
+  let name = 'Enum[';
+  for(let i = 0; i < enums.length; i++) {
     if(i > 0) {
       name += ',';
     }
-    name += transformType(types[i]);
+    name += "'" + enums[i] + "'";
   }
-  return name + ']';
+  name += ']';
+  return name;
+}
+
+
+function transformLiteralType(lt: ts.LiteralTypeNode) : string {
+  if(ts.isStringLiteral(lt.literal)) {
+    let expr = <ts.LiteralExpression>lt.literal;
+    if(expr.kind == ts.SyntaxKind.StringLiteral) {
+      return "Enum['" + expr.text + "']";
+    }
+  }
+  typeTransformationError(lt);
 }
 
 /**
@@ -191,6 +241,10 @@ function transformType(t : ts.TypeNode) : string {
 
   if(ts.isUnionTypeNode(t)) {
     return transformUnionType((<ts.UnionTypeNode>t));
+  }
+
+  if(ts.isLiteralTypeNode(t)) {
+    return transformLiteralType(<ts.LiteralTypeNode>t);
   }
 
   let tn = ts.tokenToString(t.kind);

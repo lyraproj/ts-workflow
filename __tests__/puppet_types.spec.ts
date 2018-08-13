@@ -53,4 +53,12 @@ describe('toPuppetType', () => {
   it('should convert {[s: string ]: number} to Hash[String,Number]', () => {
     expect(toPuppetType('{[s: string ]: number}')).toBe('Hash[String,Float]');
   });
+
+  it("should convert 'one'|'two'|'three' to Enum['one','two','three']", () => {
+    expect(toPuppetType("'one'|'two'|'three'")).toBe("Enum['one','two','three']");
+  });
+
+  it("should convert 'one'|'two'|Array<'one'|'two'> to Variant[Enum['one','two'],Array[Enum['one','two']]]", () => {
+    expect(toPuppetType("'one'|'two'|Array<'one'|'two'>")).toBe("Variant[Enum['one','two'],Array[Enum['one','two']]]");
+  });
 });

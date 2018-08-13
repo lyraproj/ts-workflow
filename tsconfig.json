@@ -13,19 +13,10 @@
     "outDir": "dist",
     "removeComments": true,
     "allowSyntheticDefaultImports": true,
-    "types" : ["node"],
-    "typeRoots": [
-      "node_modules/@types"
-    ],
-    "paths": {
-      "*": [
-        "node_modules/*",
-        "src/types/*"
-      ]
-    }
+    "types" : ["node"]
   },
   "include": [
     "src/**/*",
-    "examples/**/*"
+    "examples/**/*",
   ]
 }
