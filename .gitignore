@@ -20,6 +20,9 @@ coverage
 # Dependency directories
 node_modules
 
+# Generated package lock
+package-lock.json
+
 # Optional npm cache directory
 .npm
 
