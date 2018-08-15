@@ -1,5 +1,6 @@
 import {Genesis} from "./ec2_types";
-import {Actor,Action,Context} from "../src/genesis";
+import {Action,Context} from "../src/genesis";
+import {ActorServer} from "../src/genesis";
 
 const region = 'eu-west-1';
 const tags = {
@@ -9,7 +10,9 @@ const tags = {
   lifetime  : '1h'
 };
 
-const attach = new Actor({
+const server = new ActorServer(2000, 2100);
+
+server.addActor('attach', {
   vpc: new Action({
     callback: async (genesis: Context) => {
       let result = await genesis.apply(new Genesis.Aws.Vpc({
@@ -22,6 +25,7 @@ const attach = new Actor({
         enable_dns_support  : true,
       }));
       genesis.notice(`Created VPC: ${result.vpc_id}`);
+      genesis.notice(`Result from lookup: ${await genesis.lookup('test')}`);
       return {vpc_id: result.vpc_id};
     },
     output: {vpc_id: 'string'}
@@ -60,4 +64,4 @@ const attach = new Actor({
   })
 });
 
-attach.start();
+server.start();

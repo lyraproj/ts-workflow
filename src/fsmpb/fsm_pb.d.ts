@@ -6,24 +6,28 @@
 import * as jspb from "google-protobuf";
 import * as datapb_data_pb from "../datapb/data_pb";
 
-export class ActionsRequest extends jspb.Message { 
+export class ActorRequest extends jspb.Message { 
+    getName(): string;
+    setName(value: string): void;
+
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ActionsRequest.AsObject;
-    static toObject(includeInstance: boolean, msg: ActionsRequest): ActionsRequest.AsObject;
+    toObject(includeInstance?: boolean): ActorRequest.AsObject;
+    static toObject(includeInstance: boolean, msg: ActorRequest): ActorRequest.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ActionsRequest, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ActionsRequest;
-    static deserializeBinaryFromReader(message: ActionsRequest, reader: jspb.BinaryReader): ActionsRequest;
+    static serializeBinaryToWriter(message: ActorRequest, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): ActorRequest;
+    static deserializeBinaryFromReader(message: ActorRequest, reader: jspb.BinaryReader): ActorRequest;
 }
 
-export namespace ActionsRequest {
+export namespace ActorRequest {
     export type AsObject = {
+        name: string,
     }
 }
 
-export class ActionsResponse extends jspb.Message { 
+export class Actor extends jspb.Message { 
     clearActionsList(): void;
     getActionsList(): Array<Action>;
     setActionsList(value: Array<Action>): void;
@@ -31,46 +35,46 @@ export class ActionsResponse extends jspb.Message {
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ActionsResponse.AsObject;
-    static toObject(includeInstance: boolean, msg: ActionsResponse): ActionsResponse.AsObject;
+    toObject(includeInstance?: boolean): Actor.AsObject;
+    static toObject(includeInstance: boolean, msg: Actor): Actor.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ActionsResponse, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ActionsResponse;
-    static deserializeBinaryFromReader(message: ActionsResponse, reader: jspb.BinaryReader): ActionsResponse;
+    static serializeBinaryToWriter(message: Actor, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Actor;
+    static deserializeBinaryFromReader(message: Actor, reader: jspb.BinaryReader): Actor;
 }
 
-export namespace ActionsResponse {
+export namespace Actor {
     export type AsObject = {
         actionsList: Array<Action.AsObject>,
     }
 }
 
-export class ActionMessage extends jspb.Message { 
+export class Message extends jspb.Message { 
     getId(): number;
     setId(value: number): void;
 
 
-    hasArguments(): boolean;
-    clearArguments(): void;
-    getArguments(): datapb_data_pb.DataHash | undefined;
-    setArguments(value?: datapb_data_pb.DataHash): void;
+    hasValue(): boolean;
+    clearValue(): void;
+    getValue(): datapb_data_pb.Data | undefined;
+    setValue(value?: datapb_data_pb.Data): void;
 
 
     serializeBinary(): Uint8Array;
-    toObject(includeInstance?: boolean): ActionMessage.AsObject;
-    static toObject(includeInstance: boolean, msg: ActionMessage): ActionMessage.AsObject;
+    toObject(includeInstance?: boolean): Message.AsObject;
+    static toObject(includeInstance: boolean, msg: Message): Message.AsObject;
     static extensions: {[key: number]: jspb.ExtensionFieldInfo<jspb.Message>};
     static extensionsBinary: {[key: number]: jspb.ExtensionFieldBinaryInfo<jspb.Message>};
-    static serializeBinaryToWriter(message: ActionMessage, writer: jspb.BinaryWriter): void;
-    static deserializeBinary(bytes: Uint8Array): ActionMessage;
-    static deserializeBinaryFromReader(message: ActionMessage, reader: jspb.BinaryReader): ActionMessage;
+    static serializeBinaryToWriter(message: Message, writer: jspb.BinaryWriter): void;
+    static deserializeBinary(bytes: Uint8Array): Message;
+    static deserializeBinaryFromReader(message: Message, reader: jspb.BinaryReader): Message;
 }
 
-export namespace ActionMessage {
+export namespace Message {
     export type AsObject = {
         id: number,
-        arguments?: datapb_data_pb.DataHash.AsObject,
+        value?: datapb_data_pb.Data.AsObject,
     }
 }
 
@@ -100,9 +104,6 @@ export namespace Parameter {
 }
 
 export class Action extends jspb.Message { 
-    getId(): number;
-    setId(value: number): void;
-
     getName(): string;
     setName(value: string): void;
 
@@ -129,7 +130,6 @@ export class Action extends jspb.Message {
 
 export namespace Action {
     export type AsObject = {
-        id: number,
         name: string,
         inputList: Array<Parameter.AsObject>,
         outputList: Array<Parameter.AsObject>,
