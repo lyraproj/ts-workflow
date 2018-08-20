@@ -1,67 +1,69 @@
 import {Genesis} from "./ec2_types";
-import {Action,Context} from "../src/genesis";
+import {Context} from "../src/genesis";
 import {ActorServer} from "../src/genesis";
+import {StringMap} from "../dist/types/src/genesis";
 
-const region = 'eu-west-1';
-const tags = {
-  created_by: 'john.mccabe@puppet.com',
-  department: 'engineering',
-  project   : 'incubator',
-  lifetime  : '1h'
-};
 
 const server = new ActorServer(2000, 2100);
 
+// Well known types will be pre-registered, but for brevity ...
+server.registerType('StringMap', '{[s: string]: string}');
+
 server.addActor('attach', {
-  vpc: new Action({
-    callback: async (genesis: Context) => {
-      let result = await genesis.apply(new Genesis.Aws.Vpc({
-        title               : 'nyx-attachinternetgateway-test',
-        ensure              : 'present',
-        region              : region,
-        cidr_block          : "192.168.0.0/16",
-        tags                : tags,
-        enable_dns_hostnames: true,
-        enable_dns_support  : true,
-      }));
-      genesis.notice(`Created VPC: ${result.vpc_id}`);
-      genesis.notice(`Result from lookup: ${await genesis.lookup('test')}`);
-      return {vpc_id: result.vpc_id};
-    },
-    output: {vpc_id: 'string'}
-  }),
+  input: {
+    region: {type: 'string', lookup: 'aws.region'},
+    tags: {type: 'StringMap', lookup: 'aws.tags'}
+  },
+  output: {
+    vpc_id: 'string',
+    subnet_id: 'string',
+    internet_gateway_id: 'string'
+  },
+  actions: {
+    vpc: {
+      input   : {region: 'string', tags: 'StringMap'},
+      output  : {vpc_id: 'string', subnet_id: 'string'},
+      producer: async (ctx: Context, input: { region: string, tags: 'StringMap' }) => {
+        let vpc = await ctx.resource(new Genesis.Aws.Vpc({
+          title               : 'nyx-attachinternetgateway-test',
+          ensure              : 'present',
+          region              : input.region,
+          cidr_block          : "192.168.0.0/16",
+          tags                : input.tags,
+          enable_dns_hostnames: true,
+          enable_dns_support  : true
+        }));
+        ctx.notice(`Created VPC: ${vpc.vpc_id}`);
 
-  subnet: new Action({
-    callback: async (genesis: Context, input: { vpc_id: string }) => {
-      let result = await genesis.apply(new Genesis.Aws.Subnet({
-        title                  : 'nyx-attachinternetgateway-test',
-        ensure                 : 'present',
-        region                 : region,
-        vpc_id                 : input.vpc_id,
-        cidr_block             : "192.168.1.0/24",
-        tags                   : tags,
-        map_public_ip_on_launch: true
-      }));
-      genesis.notice(`Created Subnet: ${result.subnet_id}`);
-      return {subnet_id: result.subnet_id};
+        let subnet = await ctx.resource(new Genesis.Aws.Subnet({
+          title                  : 'nyx-attachinternetgateway-test',
+          ensure                 : 'present',
+          region                 : input.region,
+          vpc_id                 : vpc.vpc_id,
+          cidr_block             : "192.168.1.0/24",
+          tags                   : input.tags,
+          map_public_ip_on_launch: true
+        }));
+        ctx.notice(`Created Subnet: ${subnet.subnet_id}`);
+        return {vpc_id: vpc.vpc_id, subnet_id: subnet.subnet_id};
+      }
     },
-    input: {vpc_id: 'string'},
-    output: {subnet_id: 'string'}
-  }),
 
-  gw: new Action({
-    callback: async (genesis: Context) => {
-      let result = await genesis.apply(new Genesis.Aws.InternetGateway({
-        title : 'nyx-attachinternetgateway-test',
-        ensure: 'present',
-        region: region,
-        tags  : tags,
-      }));
-      genesis.notice(`Created Internet Gateway: ${result.internet_gateway_id}`);
-      return {internet_gateway_id: result.internet_gateway_id};
-    },
-    output: {internet_gateway_id: 'string'}
-  })
+    gw: {
+      input   : {region: 'string', tags: 'StringMap'},
+      output  : {internet_gateway_id: 'string'},
+      producer: async (ctx: Context, input: { region: string, tags: StringMap }) => {
+        let result = await ctx.resource(new Genesis.Aws.InternetGateway({
+          title : 'nyx-attachinternetgateway-test',
+          ensure: 'present',
+          region: input.region,
+          tags  : input.tags
+        }));
+        ctx.notice(`Created Internet Gateway: ${result.internet_gateway_id}`);
+        return {internet_gateway_id: result.internet_gateway_id};
+      }
+    }
+  }
 });
 
 server.start();

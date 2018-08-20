@@ -1,0 +1,8 @@
+---
+# Data made available to the server Hiera implementation
+region: eu-west-1
+tags:
+  created_by: john.mccabe@puppet.com
+  department: engineering
+  project   : incubator
+  lifetime  : 1h

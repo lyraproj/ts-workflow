@@ -9,11 +9,16 @@ import * as net from "net";
 import {ServerDuplexStream} from "grpc";
 
 const InvokeAction = 0;
-const GenesisApply = 10;
-const GenesisLookup = 11;
-const GenesisNotice = 12;
+const GenesisResource = 10;
+const GenesisNotice = 11;
 
 export type NamedValues = { [s: string]: any };
+export type StringMap = { [s: string]: string };
+
+// Data must be declared this way to avoid circular reference errors from TypeScript
+export interface DataMap { [x: string]: Data }
+export interface DataArray extends Array<Data> {}
+export type Data = null | string | number | boolean | DataMap | DataArray
 
 type ActionData = [string, string, NamedValues];
 
@@ -30,8 +35,23 @@ function isActionData(value : any): value is ActionData {
 }
 
 type ActionFunction = (genesis: Context, input: NamedValues) => Promise<NamedValues>;
-type StringMap = { [s: string]: string };
 type MessageStream = ServerDuplexStream<fsmpb.Message, fsmpb.Message>
+
+export type ParamDecl = { type: string, lookup: Data }
+export type ParamMap = { [x: string]: string | ParamDecl }
+
+export interface Action {
+  readonly input?: ParamMap;
+  readonly output?: StringMap;
+}
+
+export interface Function extends Action {
+  readonly producer: ActionFunction;
+}
+
+export interface Actor extends Action {
+  readonly actions : { [s: string]: Function | Actor };
+}
 
 export abstract class Resource {
   readonly title: string;
@@ -65,18 +85,8 @@ export class Context {
     });
   }
 
-  apply<T extends Resource>(resource: T): Promise<T> {
-    return this.call<T>(GenesisApply, resource)
-  }
-
-  async lookup(keys: string | Array<string>): Promise<any> {
-    let singleton = false;
-    if (!Array.isArray(keys)) {
-      keys = [<string>keys];
-      singleton = true;
-    }
-    let result = await this.call<{ [s: string] : any}>(GenesisLookup, keys);
-    return singleton ? result[keys[0]] : result;
+  resource<T extends Resource>(resource: T): Promise<T> {
+    return this.call<T>(GenesisResource, resource)
   }
 
   notice(message: string): void {
@@ -91,39 +101,49 @@ export class Context {
   }
 }
 
-export class Action {
-  readonly callback: ActionFunction;
-  readonly input: StringMap;
-  readonly output: StringMap;
+class FunctionImpl implements Function {
+  readonly producer: ActionFunction;
+  readonly input?: ParamMap;
+  readonly output?: StringMap;
 
-  constructor({callback, input = {}, output = {}}: { callback: ActionFunction, input?: StringMap, output?: StringMap }) {
-    this.callback = callback;
-    this.input = input;
-    this.output = output;
+  constructor(action : Function) {
+    this.producer = action.producer;
+    this.input = action.input;
+    this.output = action.output;
   }
 
-  private static convertType(t : string) : string {
-    return toPuppetType(t);
+  private static convertType(t : string, types: StringMap) : string {
+    let ct = types[t];
+    if(ct === undefined)
+      ct = toPuppetType(t);
+    return ct;
   }
 
-  private static createParams(values: {}): Array<fsmpb.Parameter> {
+  static createParams(values: ParamMap, types: StringMap): Array<fsmpb.Parameter> {
     let params: Array<fsmpb.Parameter> = [];
     for (let key in values) {
       if (values.hasOwnProperty(key)) {
+        let value = values[key];
         let p = new fsmpb.Parameter();
+        if(typeof value === 'string') {
+          p.setType(this.convertType(<string>value, types));
+        } else {
+          let pd = <ParamDecl>value;
+          p.setType(this.convertType(pd.type, types));
+          p.setLookup(datapb.toData(pd.lookup));
+        }
         p.setName(key);
-        p.setType(this.convertType(values[key]));
         params.push(p);
       }
     }
     return params;
   }
 
-  pbAction(name: string): fsmpb.Action {
+  pbAction(name: string, types: StringMap): fsmpb.Action {
     let a = new fsmpb.Action();
     a.setName(name);
-    a.setInputList(Action.createParams(this.input));
-    a.setOutputList(Action.createParams(this.output));
+    a.setInputList(FunctionImpl.createParams(this.input, types));
+    a.setOutputList(FunctionImpl.createParams(this.output, types));
     return a;
   }
 }
@@ -133,6 +153,7 @@ export class ActorServer {
   private readonly startPort : number;
   private readonly endPort : number;
   private readonly actors : { [s: string]: Actor };
+  private readonly types : StringMap;
 
   private static getAvailablePort(start : number, end : number) : Promise<number> {
     function getNextAvailablePort(currentPort : number, resolve : (port : number) => void, reject : (reason? : Error) => void) {
@@ -162,6 +183,7 @@ export class ActorServer {
     this.startPort = startPort;
     this.endPort = endPort;
     this.actors = {};
+    this.types = {};
     this.server.addService(health.service, new health.Implementation({plugin: 'SERVING'}));
     this.server.addService(fsm_grpc.ActorsService, {
       getActor : (call : grpc.ServerUnaryCall<fsmpb.ActorRequest>, callback : (error : Error | null, actor : fsmpb.Actor) => void) => {
@@ -178,8 +200,12 @@ export class ActorServer {
     });
   }
 
-  addActor(name : string, actions: { [name: string]: Action }) : void {
-    this.actors[name] = new Actor(name, actions);
+  addActor(name : string, declaration: Actor) : void {
+    this.actors[name] = new ActorImpl(name, declaration);
+  }
+
+  registerType(name : string, decl: string) {
+    this.types[name] = toPuppetType(decl);
   }
 
   start() {
@@ -202,9 +228,13 @@ export class ActorServer {
       let ar = new fsmpb.Actor();
       let as : Array<fsmpb.Action> = [];
       for(let key in actor.actions) {
-        as.push(actor.actions[key].pbAction(key))
+        let action = actor.actions[key];
+        if((<FunctionImpl>action).pbAction !== undefined)
+          as.push((<FunctionImpl>action).pbAction(key, this.types))
       }
       ar.setActionsList(as);
+      ar.setInputList(FunctionImpl.createParams(actor.input, this.types));
+      ar.setOutputList(FunctionImpl.createParams(actor.output, this.types));
       return ar;
     }
     throw new Error(`no such actor '${actorName}'`);
@@ -229,20 +259,30 @@ export class ActorServer {
       throw new Error(`no such action '${actionName}' in actor '${actorName}'`);
 
     let genesis = new Context(stream);
-    action.callback(genesis, ad[2]).then((result: {}) => {
+    (<Function>action).producer(genesis, ad[2]).then((result: {}) => {
       am.setValue(datapb.toData(result));
       stream.write(am);
     });
   }
 }
 
-class Actor {
+class ActorImpl implements Actor {
   readonly name: string;
-  readonly actions : { [s: string]: Action };
+  readonly input?: ParamMap;
+  readonly output?: StringMap;
+  readonly actions : { [s: string]: Function | Actor };
 
-  constructor(name : string, actions: { [s: string]: Action }) {
+  constructor(name : string, declaration : Actor) {
     this.name = name;
-    this.actions = actions;
+    this.input = declaration.input;
+    this.output = declaration.output;
+    this.actions = {};
+    for(let actionName in declaration.actions) {
+      let action = declaration.actions[actionName];
+      this.actions[actionName] = (<Function>action).producer === undefined
+        ? new ActorImpl(actionName, <Actor>action)
+        : new FunctionImpl(<Function>action);
+    }
   }
 }
 
