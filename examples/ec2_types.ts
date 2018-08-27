@@ -8,7 +8,7 @@ export namespace Genesis {
       readonly region: string;
       readonly tags: {};
 
-      protected constructor({title, ensure, region, tags = {}}: {
+      protected constructor({title, ensure, region, tags}: {
         title: string,
         ensure: string,
         region: string,
@@ -18,6 +18,20 @@ export namespace Genesis {
         this.ensure = ensure;
         this.region = region;
         this.tags = tags;
+      }
+
+      initHash() : {[s: string]: any} {
+        let ih = super.initHash();
+        ih['ensure'] = this.ensure;
+        ih['region'] = this.region;
+        if(this.tags !== undefined) {
+          ih['tags'] = this.tags;
+        }
+        return ih;
+      }
+
+      __pname() : string {
+        return 'Genesis::Aws::BasicResource';
       }
     }
 
@@ -53,6 +67,21 @@ export namespace Genesis {
         this.enable_dns_support = enable_dns_support;
         this.vpc_id = vpc_id;
       }
+
+      initHash() : {[s: string]: any} {
+        let ih = super.initHash();
+        ih['cidr_block'] = this.cidr_block;
+        ih['enable_dns_hostnames'] = this.enable_dns_hostnames;
+        ih['enable_dns_support'] = this.enable_dns_support;
+        if(this.vpc_id !== undefined) {
+          ih['vpc_id'] = this.vpc_id;
+        }
+        return ih;
+      }
+
+      __pname() : string {
+        return 'Genesis::Aws::Vpc';
+      }
     }
 
     export class Subnet extends BasicResource {
@@ -87,6 +116,21 @@ export namespace Genesis {
         this.vpc_id = vpc_id;
         this.subnet_id = subnet_id;
       }
+
+      initHash() : {[s: string]: any} {
+        let ih = super.initHash();
+        ih['cidr_block'] = this.cidr_block;
+        ih['map_public_ip_on_launch'] = this.map_public_ip_on_launch;
+        ih['vpc_id'] = this.vpc_id;
+        if(this.vpc_id !== undefined) {
+          ih['subnet_id'] = this.subnet_id;
+        }
+        return ih;
+      }
+
+      __pname() : string {
+        return 'Genesis::Aws::Subnet';
+      }
     }
 
     export class InternetGateway extends BasicResource {
@@ -108,6 +152,18 @@ export namespace Genesis {
         }) {
         super({title: title, ensure: ensure, region: region, tags: tags});
         this.internet_gateway_id = internet_gateway_id;
+      }
+
+      initHash() : {[s: string]: any} {
+        let ih = super.initHash();
+        if(this.internet_gateway_id !== undefined) {
+          ih['internet_gateway_id'] = this.internet_gateway_id;
+        }
+        return ih;
+      }
+
+      __pname() : string {
+        return 'Genesis::Aws::InternetGateway';
       }
     }
   }

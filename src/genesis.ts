@@ -59,6 +59,14 @@ export abstract class Resource {
   protected constructor({title}: { title: string }) {
     this.title = title
   }
+
+  initHash() : {[s: string]: any} {
+    return { title: this.title };
+  }
+
+  __pname() : string {
+    return 'Resource'
+  }
 }
 
 export class Context {
