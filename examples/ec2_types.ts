@@ -1,4 +1,4 @@
-import * as genesis from "../src/genesis";
+import * as genesis from "../src/genesis/genesis";
 
 // Types generated based on typeset from provider
 export namespace Genesis {
@@ -20,18 +20,18 @@ export namespace Genesis {
         this.tags = tags;
       }
 
-      initHash() : {[s: string]: any} {
-        let ih = super.initHash();
+      __ptype() : string {
+        return 'Genesis::Aws::BasicResource';
+      }
+
+      __pvalue() : {[s: string]: any} {
+        let ih = super.__pvalue();
         ih['ensure'] = this.ensure;
         ih['region'] = this.region;
         if(this.tags !== undefined) {
           ih['tags'] = this.tags;
         }
         return ih;
-      }
-
-      __pname() : string {
-        return 'Genesis::Aws::BasicResource';
       }
     }
 
@@ -68,8 +68,12 @@ export namespace Genesis {
         this.vpc_id = vpc_id;
       }
 
-      initHash() : {[s: string]: any} {
-        let ih = super.initHash();
+      __ptype() : string {
+        return 'Genesis::Aws::Vpc';
+      }
+
+      __pvalue() : {[s: string]: any} {
+        let ih = super.__pvalue();
         ih['cidr_block'] = this.cidr_block;
         ih['enable_dns_hostnames'] = this.enable_dns_hostnames;
         ih['enable_dns_support'] = this.enable_dns_support;
@@ -77,10 +81,6 @@ export namespace Genesis {
           ih['vpc_id'] = this.vpc_id;
         }
         return ih;
-      }
-
-      __pname() : string {
-        return 'Genesis::Aws::Vpc';
       }
     }
 
@@ -117,8 +117,12 @@ export namespace Genesis {
         this.subnet_id = subnet_id;
       }
 
-      initHash() : {[s: string]: any} {
-        let ih = super.initHash();
+      __ptype() : string {
+        return 'Genesis::Aws::Subnet';
+      }
+
+      __pvalue() : {[s: string]: any} {
+        let ih = super.__pvalue();
         ih['cidr_block'] = this.cidr_block;
         ih['map_public_ip_on_launch'] = this.map_public_ip_on_launch;
         ih['vpc_id'] = this.vpc_id;
@@ -126,10 +130,6 @@ export namespace Genesis {
           ih['subnet_id'] = this.subnet_id;
         }
         return ih;
-      }
-
-      __pname() : string {
-        return 'Genesis::Aws::Subnet';
       }
     }
 
@@ -154,16 +154,16 @@ export namespace Genesis {
         this.internet_gateway_id = internet_gateway_id;
       }
 
-      initHash() : {[s: string]: any} {
-        let ih = super.initHash();
+      __ptype() : string {
+        return 'Genesis::Aws::InternetGateway';
+      }
+
+      __pvalue() : {[s: string]: any} {
+        let ih = super.__pvalue();
         if(this.internet_gateway_id !== undefined) {
           ih['internet_gateway_id'] = this.internet_gateway_id;
         }
         return ih;
-      }
-
-      __pname() : string {
-        return 'Genesis::Aws::InternetGateway';
       }
     }
   }

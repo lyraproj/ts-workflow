@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import * as rich from "../src/richdata";
+import {FromDataConverter, ToDataConverter} from "../src/genesis/richdata";
 
 export namespace My {
   export class Thing {
@@ -30,7 +30,7 @@ export namespace My {
         return this.message;
       }
 
-      _pname() : string {
+      __ptype() : string {
         return 'My::Own::Item';
       }
     }
@@ -40,7 +40,7 @@ export namespace My {
 describe('FromDataConverter', () => {
   it('should create object using positional constructor arguments', () => {
     let obj = new My.Own.Thing('Hello world');
-    let createdObj = new rich.FromDataConverter(this,true).convert({
+    let createdObj = new FromDataConverter(this).convert({
       __ptype: 'My::Own::Thing',
       message: 'Hello world'
     });
@@ -50,7 +50,7 @@ describe('FromDataConverter', () => {
 
   it('should create object using named constructor arguments', () => {
     let obj = new My.Own.Item({ message: 'Hello world'});
-    let createdObj = new rich.FromDataConverter(this,true).convert({
+    let createdObj = new FromDataConverter(this).convert({
       __ptype: 'My::Own::Item',
       message: 'Hello world'
     });
@@ -59,10 +59,30 @@ describe('FromDataConverter', () => {
   });
 
   it('object is not equal similar object in other namespace', () => {
-    let createdObj = new rich.FromDataConverter(this,true).convert({
+    let createdObj = new FromDataConverter(this).convert({
       __ptype: 'My::Own::Thing',
       message: 'Hello world'
     });
     expect(createdObj).not.toBeInstanceOf(My.Thing)
+  });
+});
+
+describe('ToDataConverter', () => {
+  it('should create Data from object using positional constructor arguments', () => {
+    let obj = new My.Own.Thing('Hello world');
+    let data = new ToDataConverter(this).convert(obj);
+    expect(data).toEqual({
+      __ptype: 'My::Own::Thing',
+      message: 'Hello world'
+    });
+  });
+
+  it('should create Data from object using named constructor arguments', () => {
+    let obj = new My.Own.Item({ message: 'Hello world'});
+    let data = new ToDataConverter(this).convert(obj);
+    expect(data).toEqual({
+      __ptype: 'My::Own::Item',
+      message: 'Hello world'
+    });
   });
 });

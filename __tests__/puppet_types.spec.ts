@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { toPuppetType } from "../src/puppet_types";
+import { toPuppetType } from "../src/genesis/puppet_types";
 
 describe('toPuppetType', () => {
   it('should convert number to Float', () => {

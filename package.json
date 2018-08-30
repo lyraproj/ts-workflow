@@ -28,10 +28,11 @@
     "tslint-microsoft-contrib": "^5.2.0"
   },
   "scripts": {
-    "build": "npm run build-ts",
+    "build": "npm run copy-js && npm run build-ts",
     "build-ts": "tsc",
-    "test": "jest",
+    "test": "jest --forceExit --coverage --verbose",
     "release": "standard-version",
+    "copy-js": "scripts/copy_js.sh",
     "protogen": "scripts/gen_js.sh"
   },
   "directories": {

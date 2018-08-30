@@ -7,16 +7,24 @@
     "moduleResolution": "node",
     "noUnusedLocals": true,
     "sourceMap": true,
-    "declaration": true,
-    "declarationDir": "dist/types",
     "baseUrl": ".",
     "outDir": "dist",
     "removeComments": true,
     "allowSyntheticDefaultImports": true,
-    "types" : ["node"]
+    "types" : ["node"],
+    "rootDirs": [
+      "src",
+      "generated"
+    ],
+    "paths": {
+      "*": [
+        "src/types/*",
+        "generated/*"
+      ]
+    }
   },
   "include": [
     "src/**/*",
-    "examples/**/*",
+    "examples/**/*"
   ]
 }

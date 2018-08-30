@@ -1,12 +1,13 @@
 import * as grpc from "grpc";
-import * as fsmpb from "./fsmpb/fsm_pb";
-import * as fsm_grpc from "./fsmpb/fsm_grpc_pb";
+import * as fsmpb from "../fsmpb/fsm_pb";
+import * as fsm_grpc from "../fsmpb/fsm_grpc_pb";
+import * as datapb from "../datapb/reflect"
 
-import * as datapb from "./datapb/reflect";
 import * as health from "grpc-health-check/health";
 import {toPuppetType} from "./puppet_types";
 import * as net from "net";
 import {ServerDuplexStream} from "grpc";
+import {Data, FromDataConverter, ToDataConverter} from "./richdata";
 
 const InvokeAction = 0;
 const GenesisResource = 10;
@@ -14,11 +15,6 @@ const GenesisNotice = 11;
 
 export type NamedValues = { [s: string]: any };
 export type StringMap = { [s: string]: string };
-
-// Data must be declared this way to avoid circular reference errors from TypeScript
-export interface DataMap { [x: string]: Data }
-export interface DataArray extends Array<Data> {}
-export type Data = null | string | number | boolean | DataMap | DataArray
 
 type ActionData = [string, string, NamedValues];
 
@@ -60,31 +56,33 @@ export abstract class Resource {
     this.title = title
   }
 
-  initHash() : {[s: string]: any} {
-    return { title: this.title };
+  __ptype() : string {
+    return 'Resource'
   }
 
-  __pname() : string {
-    return 'Resource'
+  __pvalue() : {[s: string]: any} {
+    return { title: this.title };
   }
 }
 
 export class Context {
   private readonly stream: MessageStream;
+  private readonly toData: ToDataConverter;
+  private readonly fromData: FromDataConverter;
 
   private call<T extends {}>(id: number, argsHash: {}): Promise<T> {
     return new Promise((resolve: (result: T) => void, reject: (reason?: any) => void) => {
       try {
         let am = new fsmpb.Message();
         am.setId(id);
-        am.setValue(datapb.toData(argsHash));
+        am.setValue(datapb.toData(this.toData.convert(argsHash)));
 
         let stream = this.stream;
         stream.once('data', (result: fsmpb.Message) => {
           if (result.getId() != id) {
             throw new Error(`expected reply with id ${id}, got ${result.getId()}`);
           }
-          resolve(<T>datapb.fromData(result.getValue()));
+          resolve(this.fromData.convert(<T>datapb.fromData(result.getValue())));
         });
         stream.write(am);
       } catch (err) {
@@ -106,6 +104,8 @@ export class Context {
 
   constructor(stream: MessageStream) {
     this.stream = stream;
+    this.toData = new ToDataConverter(exports);
+    this.fromData = new FromDataConverter(exports);
   }
 }
 

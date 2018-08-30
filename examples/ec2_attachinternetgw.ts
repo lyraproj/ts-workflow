@@ -1,8 +1,6 @@
 import {Genesis} from "./ec2_types";
-import {Context} from "../src/genesis";
-import {ActorServer} from "../src/genesis";
-import {StringMap} from "../dist/types/src/genesis";
-
+import {Context} from "../src/genesis/genesis";
+import {ActorServer, StringMap} from "../src/genesis/genesis";
 
 const server = new ActorServer(2000, 2100);
 

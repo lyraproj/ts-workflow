@@ -158,22 +158,19 @@ function transformTupleType(tn : ts.TupleTypeNode) : string {
  */
 function transformUnionType(ut : ts.UnionTypeNode) : string {
   // Union of string literals is an Enum
-  let types = ut.types;
-  let count = types.length;
   let strings : string[] = [];
   let others : ts.TypeNode[] = [];
 
-  for(let i = 0; i < count; i++) {
-    let t = types[i];
+  ut.types.forEach(t => {
     if(ts.isLiteralTypeNode(t)) {
       let lt = <ts.LiteralTypeNode>t;
       if(ts.isStringLiteral(lt.literal)) {
         strings.push((<ts.LiteralExpression>lt.literal).text);
-        continue;
+        return;
       }
     }
     others.push(t);
-  }
+  });
 
   if(others.length > 0) {
     let name = 'Variant[';
@@ -182,14 +179,14 @@ function transformUnionType(ut : ts.UnionTypeNode) : string {
       name += transformEnum(strings);
       first = false;
     }
-    for(let i = 0; i < count; i++) {
+    others.forEach(t => {
       if(first) {
         first = false;
       } else {
         name += ',';
       }
-      name += transformType(types[i]);
-    }
+      name += transformType(t);
+    });
     return name + ']';
   }
   return transformEnum(strings);
