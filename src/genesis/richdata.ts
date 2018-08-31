@@ -22,7 +22,7 @@ function hashSelect(hash : DataMap, predicate : (key : string, value : Data) => 
 }
 
 function isHash(value : any) : value is {} {
-  return typeof value === 'object' && value.constructor === Object;
+  return value && typeof value === 'object' && value.constructor === Object;
 }
 
 export namespace Foo {

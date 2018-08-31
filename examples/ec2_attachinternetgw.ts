@@ -2,7 +2,7 @@ import {Genesis} from "./ec2_types";
 import {Context} from "../src/genesis/genesis";
 import {ActorServer, StringMap} from "../src/genesis/genesis";
 
-const server = new ActorServer(2000, 2100);
+const server = new ActorServer({Genesis: Genesis},2000, 2100);
 
 // Well known types will be pre-registered, but for brevity ...
 server.registerType('StringMap', '{[s: string]: string}');

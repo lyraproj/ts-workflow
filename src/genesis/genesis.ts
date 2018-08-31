@@ -69,6 +69,7 @@ export class Context {
   private readonly stream: MessageStream;
   private readonly toData: ToDataConverter;
   private readonly fromData: FromDataConverter;
+  private readonly nsBase: {}
 
   private call<T extends {}>(id: number, argsHash: {}): Promise<T> {
     return new Promise((resolve: (result: T) => void, reject: (reason?: any) => void) => {
@@ -102,10 +103,11 @@ export class Context {
     this.stream.write(am);
   }
 
-  constructor(stream: MessageStream) {
+  constructor(nsBase: {}, stream: MessageStream) {
+    this.nsBase = nsBase;
     this.stream = stream;
-    this.toData = new ToDataConverter(exports);
-    this.fromData = new FromDataConverter(exports);
+    this.toData = new ToDataConverter(this.nsBase);
+    this.fromData = new FromDataConverter(this.nsBase);
   }
 }
 
@@ -162,6 +164,7 @@ export class ActorServer {
   private readonly endPort : number;
   private readonly actors : { [s: string]: Actor };
   private readonly types : StringMap;
+  private readonly nsBase : {};
 
   private static getAvailablePort(start : number, end : number) : Promise<number> {
     function getNextAvailablePort(currentPort : number, resolve : (port : number) => void, reject : (reason? : Error) => void) {
@@ -186,7 +189,8 @@ export class ActorServer {
     });
   }
 
-  constructor(startPort : number, endPort : number) {
+  constructor(nsBase : {}, startPort : number, endPort : number) {
+    this.nsBase = nsBase;
     this.server = new grpc.Server();
     this.startPort = startPort;
     this.endPort = endPort;
@@ -266,7 +270,7 @@ export class ActorServer {
     if(action === undefined)
       throw new Error(`no such action '${actionName}' in actor '${actorName}'`);
 
-    let genesis = new Context(stream);
+    let genesis = new Context(this.nsBase, stream);
     (<Function>action).producer(genesis, ad[2]).then((result: {}) => {
       am.setValue(datapb.toData(result));
       stream.write(am);
