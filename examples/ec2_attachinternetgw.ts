@@ -1,6 +1,5 @@
 import {Genesis} from "./ec2_types";
-import {Context} from "../src/genesis/genesis";
-import {ActorServer, StringMap} from "../src/genesis/genesis";
+import {Context, ActorServer, StringMap} from "../src/genesis/genesis";
 
 const server = new ActorServer({Genesis: Genesis},2000, 2100);
 
@@ -47,6 +46,22 @@ server.addActor('attach', {
       }
     },
 
+    nodes: {
+      iterate : {nodes: { type: 'number', lookup: 'aws.node_count'}},
+      input   : {region: 'string', tags: 'StringMap'},
+      output  : {internet_gateway_id: 'string'},
+      producer: async (ctx: Context, input: { region: string, tags: StringMap }) => {
+        let result = await ctx.resource(new Genesis.Aws.InternetGateway({
+          title : 'nyx-attachinternetgateway-test',
+          ensure: 'present',
+          region: input.region,
+          tags  : input.tags
+        }));
+        ctx.notice(`Created Internet Gateway: ${result.internet_gateway_id}`);
+        return {internet_gateway_id: result.internet_gateway_id};
+      }
+    },
+
     gw: {
       input   : {region: 'string', tags: 'StringMap'},
       output  : {internet_gateway_id: 'string'},
@@ -61,6 +76,7 @@ server.addActor('attach', {
         return {internet_gateway_id: result.internet_gateway_id};
       }
     }
+
   }
 });
 

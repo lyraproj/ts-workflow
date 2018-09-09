@@ -36,12 +36,16 @@ type MessageStream = ServerDuplexStream<fsmpb.Message, fsmpb.Message>
 export type ParamDecl = { type: string, lookup: Data }
 export type ParamMap = { [x: string]: string | ParamDecl }
 
+type IterAtom = number | string | boolean | ParamDecl;
+export type IterValue = number | ParamDecl | Array<IterAtom> | { [x:string]: IterAtom }
+
 export interface Action {
   readonly input?: ParamMap;
   readonly output?: StringMap;
 }
 
 export interface Function extends Action {
+  readonly iterate?: IterValue;
   readonly producer: ActionFunction;
 }
 
@@ -113,11 +117,13 @@ export class Context {
 
 class FunctionImpl implements Function {
   readonly producer: ActionFunction;
+  readonly iterate?: IterValue;
   readonly input?: ParamMap;
   readonly output?: StringMap;
 
   constructor(action : Function) {
     this.producer = action.producer;
+    this.iterate = action.iterate;
     this.input = action.input;
     this.output = action.output;
   }
@@ -154,6 +160,8 @@ class FunctionImpl implements Function {
     a.setName(name);
     a.setInputList(FunctionImpl.createParams(this.input, types));
     a.setOutputList(FunctionImpl.createParams(this.output, types));
+    if(this.iterate !== undefined)
+      a.setIterate(datapb.toData(this.iterate));
     return a;
   }
 }

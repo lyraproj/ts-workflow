@@ -655,7 +655,7 @@ if (goog.DEBUG && !COMPILED) {
  * @private {!Array<number>}
  * @const
  */
-proto.puppet.fsm.Action.repeatedFields_ = [2,3];
+proto.puppet.fsm.Action.repeatedFields_ = [3,4];
 
 
 
@@ -687,6 +687,7 @@ proto.puppet.fsm.Action.prototype.toObject = function(opt_includeInstance) {
 proto.puppet.fsm.Action.toObject = function(includeInstance, msg) {
   var f, obj = {
     name: jspb.Message.getFieldWithDefault(msg, 1, ""),
+    iterate: (f = msg.getIterate()) && datapb_data_pb.Data.toObject(includeInstance, f),
     inputList: jspb.Message.toObjectList(msg.getInputList(),
     proto.puppet.fsm.Parameter.toObject, includeInstance),
     outputList: jspb.Message.toObjectList(msg.getOutputList(),
@@ -732,11 +733,16 @@ proto.puppet.fsm.Action.deserializeBinaryFromReader = function(msg, reader) {
       msg.setName(value);
       break;
     case 2:
+      var value = new datapb_data_pb.Data;
+      reader.readMessage(value,datapb_data_pb.Data.deserializeBinaryFromReader);
+      msg.setIterate(value);
+      break;
+    case 3:
       var value = new proto.puppet.fsm.Parameter;
       reader.readMessage(value,proto.puppet.fsm.Parameter.deserializeBinaryFromReader);
       msg.addInput(value);
       break;
-    case 3:
+    case 4:
       var value = new proto.puppet.fsm.Parameter;
       reader.readMessage(value,proto.puppet.fsm.Parameter.deserializeBinaryFromReader);
       msg.addOutput(value);
@@ -777,10 +783,18 @@ proto.puppet.fsm.Action.serializeBinaryToWriter = function(message, writer) {
       f
     );
   }
+  f = message.getIterate();
+  if (f != null) {
+    writer.writeMessage(
+      2,
+      f,
+      datapb_data_pb.Data.serializeBinaryToWriter
+    );
+  }
   f = message.getInputList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
-      2,
+      3,
       f,
       proto.puppet.fsm.Parameter.serializeBinaryToWriter
     );
@@ -788,7 +802,7 @@ proto.puppet.fsm.Action.serializeBinaryToWriter = function(message, writer) {
   f = message.getOutputList();
   if (f.length > 0) {
     writer.writeRepeatedMessage(
-      3,
+      4,
       f,
       proto.puppet.fsm.Parameter.serializeBinaryToWriter
     );
@@ -812,48 +826,47 @@ proto.puppet.fsm.Action.prototype.setName = function(value) {
 
 
 /**
- * repeated Parameter input = 2;
+ * optional puppet.datapb.Data iterate = 2;
+ * @return {?proto.puppet.datapb.Data}
+ */
+proto.puppet.fsm.Action.prototype.getIterate = function() {
+  return /** @type{?proto.puppet.datapb.Data} */ (
+    jspb.Message.getWrapperField(this, datapb_data_pb.Data, 2));
+};
+
+
+/** @param {?proto.puppet.datapb.Data|undefined} value */
+proto.puppet.fsm.Action.prototype.setIterate = function(value) {
+  jspb.Message.setWrapperField(this, 2, value);
+};
+
+
+proto.puppet.fsm.Action.prototype.clearIterate = function() {
+  this.setIterate(undefined);
+};
+
+
+/**
+ * Returns whether this field is set.
+ * @return {!boolean}
+ */
+proto.puppet.fsm.Action.prototype.hasIterate = function() {
+  return jspb.Message.getField(this, 2) != null;
+};
+
+
+/**
+ * repeated Parameter input = 3;
  * @return {!Array.<!proto.puppet.fsm.Parameter>}
  */
 proto.puppet.fsm.Action.prototype.getInputList = function() {
-  return /** @type{!Array.<!proto.puppet.fsm.Parameter>} */ (
-    jspb.Message.getRepeatedWrapperField(this, proto.puppet.fsm.Parameter, 2));
-};
-
-
-/** @param {!Array.<!proto.puppet.fsm.Parameter>} value */
-proto.puppet.fsm.Action.prototype.setInputList = function(value) {
-  jspb.Message.setRepeatedWrapperField(this, 2, value);
-};
-
-
-/**
- * @param {!proto.puppet.fsm.Parameter=} opt_value
- * @param {number=} opt_index
- * @return {!proto.puppet.fsm.Parameter}
- */
-proto.puppet.fsm.Action.prototype.addInput = function(opt_value, opt_index) {
-  return jspb.Message.addToRepeatedWrapperField(this, 2, opt_value, proto.puppet.fsm.Parameter, opt_index);
-};
-
-
-proto.puppet.fsm.Action.prototype.clearInputList = function() {
-  this.setInputList([]);
-};
-
-
-/**
- * repeated Parameter output = 3;
- * @return {!Array.<!proto.puppet.fsm.Parameter>}
- */
-proto.puppet.fsm.Action.prototype.getOutputList = function() {
   return /** @type{!Array.<!proto.puppet.fsm.Parameter>} */ (
     jspb.Message.getRepeatedWrapperField(this, proto.puppet.fsm.Parameter, 3));
 };
 
 
 /** @param {!Array.<!proto.puppet.fsm.Parameter>} value */
-proto.puppet.fsm.Action.prototype.setOutputList = function(value) {
+proto.puppet.fsm.Action.prototype.setInputList = function(value) {
   jspb.Message.setRepeatedWrapperField(this, 3, value);
 };
 
@@ -863,8 +876,39 @@ proto.puppet.fsm.Action.prototype.setOutputList = function(value) {
  * @param {number=} opt_index
  * @return {!proto.puppet.fsm.Parameter}
  */
-proto.puppet.fsm.Action.prototype.addOutput = function(opt_value, opt_index) {
+proto.puppet.fsm.Action.prototype.addInput = function(opt_value, opt_index) {
   return jspb.Message.addToRepeatedWrapperField(this, 3, opt_value, proto.puppet.fsm.Parameter, opt_index);
+};
+
+
+proto.puppet.fsm.Action.prototype.clearInputList = function() {
+  this.setInputList([]);
+};
+
+
+/**
+ * repeated Parameter output = 4;
+ * @return {!Array.<!proto.puppet.fsm.Parameter>}
+ */
+proto.puppet.fsm.Action.prototype.getOutputList = function() {
+  return /** @type{!Array.<!proto.puppet.fsm.Parameter>} */ (
+    jspb.Message.getRepeatedWrapperField(this, proto.puppet.fsm.Parameter, 4));
+};
+
+
+/** @param {!Array.<!proto.puppet.fsm.Parameter>} value */
+proto.puppet.fsm.Action.prototype.setOutputList = function(value) {
+  jspb.Message.setRepeatedWrapperField(this, 4, value);
+};
+
+
+/**
+ * @param {!proto.puppet.fsm.Parameter=} opt_value
+ * @param {number=} opt_index
+ * @return {!proto.puppet.fsm.Parameter}
+ */
+proto.puppet.fsm.Action.prototype.addOutput = function(opt_value, opt_index) {
+  return jspb.Message.addToRepeatedWrapperField(this, 4, opt_value, proto.puppet.fsm.Parameter, opt_index);
 };
 
 

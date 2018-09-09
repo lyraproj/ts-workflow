@@ -98,6 +98,12 @@ export class Action extends jspb.Message {
     getName(): string;
     setName(value: string): void;
 
+
+    hasIterate(): boolean;
+    clearIterate(): void;
+    getIterate(): datapb_data_pb.Data | undefined;
+    setIterate(value?: datapb_data_pb.Data): void;
+
     clearInputList(): void;
     getInputList(): Array<Parameter>;
     setInputList(value: Array<Parameter>): void;
@@ -122,6 +128,7 @@ export class Action extends jspb.Message {
 export namespace Action {
     export type AsObject = {
         name: string,
+        iterate?: datapb_data_pb.Data.AsObject,
         inputList: Array<Parameter.AsObject>,
         outputList: Array<Parameter.AsObject>,
     }
