@@ -4,7 +4,7 @@ import {extractTypeInfo} from "../lib/servicesdk/ManifestTypes";
 
 describe('inferWorkflowTypes', () => {
   it('finds types', () => {
-    const tr = extractTypeInfo(['examples/vpc_with_subnet.ts']);
+    const tr = extractTypeInfo(['lib/examples/vpc_with_subnet.ts']);
 
     expect(tr.inferredTypes).toEqual(
       {

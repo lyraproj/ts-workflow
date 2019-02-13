@@ -33,7 +33,7 @@ package-lock.json
 .idea/
 
 # Built distribution
-build/
+dist/
 
 # npm pack output
 *.tgz

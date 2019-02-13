@@ -4,15 +4,10 @@
     "noImplicitAny": false,
     "lib": ["es2017", "dom"],
     "target": "es2017",
-    "rootDir": ".",
-    "outDir": "./dist",
+    "moduleResolution": "node",
+    "outDir": "dist",
     "sourceMap": true,
-    "rootDirs": [
-      "lib", "generated"]
+    "rootDirs": [ "lib", "generated"]
   },
-  "include": [
-    "lib/*.ts",
-    "lib/**/*.ts",
-    "examples/*.ts"
-  ]
+  "include": ["lib"]
 }
