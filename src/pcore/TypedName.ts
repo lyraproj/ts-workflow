@@ -1,6 +1,7 @@
-import {PcoreValue} from "./Serializer";
-import {StringHash} from "./Util";
-import * as util from "util";
+import * as util from 'util';
+
+import {PcoreValue} from './Serializer';
+import {StringHash} from './Util';
 
 export enum Namespace {
   NsType = 'type',
@@ -25,16 +26,15 @@ export class TypedName implements PcoreValue {
   readonly canonical;
   readonly parts: string[];
 
-  constructor(namespace : Namespace, name : string, authority : URL = runtimeAuthority) {
-
+  constructor(namespace: Namespace, name: string, authority: URL = runtimeAuthority) {
     let parts = name.toLowerCase().split('::');
-    if(parts.length > 0 && parts[0] === '' && name.length > 2) {
+    if (parts.length > 0 && parts[0] === '' && name.length > 2) {
       // Name starts with '::'. Get rid of it.
       parts = parts.slice(1);
       name = name.substring(2);
     }
     parts.forEach((v) => {
-      if(!TypedName.allowedCharacters.test(v)) {
+      if (!TypedName.allowedCharacters.test(v)) {
         throw new Error(`Invalid characters in part '${v}' of name '${name}'`);
       }
     });
@@ -45,7 +45,7 @@ export class TypedName implements PcoreValue {
     this.canonical = `${this.authority}/${namespace}/${name}`.toLowerCase();
   }
 
-  toString() : string {
+  toString(): string {
     return `${this.authority}/${this.namespace}/${this.name}`;
   }
 
@@ -54,15 +54,12 @@ export class TypedName implements PcoreValue {
   }
 
   __ptype(): string {
-    return "TypedName";
+    return 'TypedName';
   }
 
-  __pvalue(): string | StringHash {
-    const mv = {
-      namespace : this.namespace.toString(),
-      name : this.name
-    };
-    if(this.authority !== runtimeAuthority) {
+  __pvalue(): string|StringHash {
+    const mv = {namespace: this.namespace.toString(), name: this.name};
+    if (this.authority !== runtimeAuthority) {
       mv['authority'] = this.authority.toString();
     }
     return mv;

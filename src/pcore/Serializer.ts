@@ -1,23 +1,23 @@
-import {Context} from "./Context";
-import {isHash, isStringMap, NotNull, strictString, StringHash, Value} from "./Util";
-import {Sensitive} from "./Sensitive";
+import {Context} from './Context';
+import {Sensitive} from './Sensitive';
+import {isHash, isStringMap, NotNull, strictString, StringHash, Value} from './Util';
 
 export const PTYPE_KEY = '__ptype';
 export const PVALUE_KEY = '__pvalue';
 
 export interface PcoreObject {
-  __ptype() : string;
+  __ptype(): string;
 }
 
 export interface PcoreValue extends PcoreObject {
-  __pvalue() : string | number | StringHash;
+  __pvalue(): string|number|StringHash;
 }
 
-export function isPcoreObject(value : object) : value is PcoreObject {
+export function isPcoreObject(value: object): value is PcoreObject {
   return value !== null && typeof value[PTYPE_KEY] === 'function';
 }
 
-export function isPcoreValue(value : object) : value is PcoreValue {
+export function isPcoreValue(value: object): value is PcoreValue {
   return value !== null && typeof value[PVALUE_KEY] === 'function';
 }
 
@@ -25,46 +25,51 @@ export const DEFAULT = Symbol('default');
 
 
 const enum DedupLevel {
-  NoDedup, NoKeyDedup, MaxDedup
+  NoDedup,
+  NoKeyDedup,
+  MaxDedup
 }
 
 export interface ValueConsumer {
-  canDoBinary() : boolean;
-  canDoComplexKeys() : boolean;
-  add(value : boolean | number | string | Uint8Array | null);
-  addArray(len : number, doer : () => void);
-  addHash(len : number, doer : () => void);
-  addRef(ref : number);
-  stringDedupThreshold() : number;
+  canDoBinary(): boolean;
+  canDoComplexKeys(): boolean;
+  add(value: boolean|number|string|Uint8Array|null);
+  addArray(len: number, doer: () => void);
+  addHash(len: number, doer: () => void);
+  addRef(ref: number);
+  stringDedupThreshold(): number;
 }
 
 export class Serializer {
-  readonly context : Context;
-  readonly richData : boolean;
-  readonly dedupLevel : DedupLevel;
+  readonly context: Context;
+  readonly richData: boolean;
+  readonly dedupLevel: DedupLevel;
 
-  constructor(c : Context, options : {rich_data? : boolean, dedup_level? : DedupLevel}) {
+  constructor(c: Context, options: {rich_data?: boolean, dedup_level?: DedupLevel}) {
     this.context = c;
     this.dedupLevel = options.dedup_level === undefined ? DedupLevel.MaxDedup : options.dedup_level;
     this.richData = options.rich_data === undefined ? true : options.rich_data;
   }
 
-  convert(value : Value, consumer : ValueConsumer) {
-    const c = new SerializerContext(this, consumer, this.dedupLevel >= DedupLevel.MaxDedup && !consumer.canDoComplexKeys() ? DedupLevel.NoKeyDedup : this.dedupLevel);
+  convert(value: Value, consumer: ValueConsumer) {
+    const c = new SerializerContext(
+        this, consumer,
+        this.dedupLevel >= DedupLevel.MaxDedup && !consumer.canDoComplexKeys() ? DedupLevel.NoKeyDedup :
+                                                                                 this.dedupLevel);
     c.toData(1, value);
   }
 }
 
 class SerializerContext {
-  private readonly config : Serializer;
-  private readonly consumer : ValueConsumer;
-  private readonly values : Map<Value,number>;
-  private readonly strings : {[s: string] : number};
-  private readonly path : Value[];
-  private readonly dedupLevel : number;
-  private refIndex : number;
+  private readonly config: Serializer;
+  private readonly consumer: ValueConsumer;
+  private readonly values: Map<Value, number>;
+  private readonly strings: {[s: string]: number};
+  private readonly path: Value[];
+  private readonly dedupLevel: number;
+  private refIndex: number;
 
-  constructor(config : Serializer, consumer : ValueConsumer, dedupLevel : DedupLevel) {
+  constructor(config: Serializer, consumer: ValueConsumer, dedupLevel: DedupLevel) {
     this.config = config;
     this.consumer = consumer;
     this.dedupLevel = dedupLevel;
@@ -74,136 +79,136 @@ class SerializerContext {
     this.refIndex = 0;
   }
 
-  toData(level : number, value : Value) {
-    if(value === null || value === undefined) {
+  toData(level: number, value: Value) {
+    if (value === null || value === undefined) {
       this.addData(null);
       return;
     }
 
     switch (typeof value) {
-    case 'number':
-    case 'boolean':
-      this.addData(value as number | boolean);
-      break;
-    case 'string':
-      this.addString(level, value as string);
-      break;
-    case 'function':
-      if (this.config.richData) {
-        // A constructor actually denotes a type
-        const tn = this.config.context.typeNames.nameForType(value as Function);
-        if (tn === undefined) {
-          throw new Error(`${this.pathToString()}: unable to serialize function ${value}`);
-        }
-        this.process(value, () => this.addHash(1, () => {
-          this.addString(2, PTYPE_KEY);
-          this.addString(1, tn);
-        }));
-      } else {
-        this.unknownToStringWithWarning(level, value);
-      }
-      break;
-    case 'object':
-      switch (value.constructor) {
-      case Object:
-        this.process(value, () => {
-          const h = (value as StringHash);
-          const keys = Object.keys(h);
-          this.addHash(keys.length, () => {
-            for(const key in value) {
-              if(value.hasOwnProperty(key)) {
-                const prop = value[key];
-                if (typeof prop !== 'function') {
-                  this.addString(2, key);
-                  this.withPath(key, () => this.toData(1, prop));
-                }
-              }
-            }
-          });
-        });
+      case 'number':
+      case 'boolean':
+        this.addData(value as number | boolean);
         break;
-      case Map:
-        this.process(value, () => {
-          const h = (value as Map<Value,Value>);
-          this.addHash(h.size, () => {
-            if(this.consumer.canDoComplexKeys() || isStringMap(h)) {
-              h.forEach((value, key) => {
-                this.toData(2, key);
-                this.withPath(key, () => this.toData(1, value));
-              });
-            } else {
-              this.nonStringKeyedHashToData(h);
-            }
-          });
-        });
+      case 'string':
+        this.addString(level, value as string);
         break;
-      case Array:
-        this.process(value, () => {
-          const arr = (value as Value[]);
-          this.addArray(arr.length, () => {
-            for(let idx = 0; idx < arr.length; idx++) {
-              this.withPath(idx, () => this.toData(1, arr[idx]));
-            }
-          });
-        });
-        break;
-      case Date:
-        this.process(value, () => this.addHash(2, () => {
-          this.addString(2, PTYPE_KEY);
-          this.addString(1, 'Timestamp');
-          this.addString(2, PVALUE_KEY);
-          this.withPath(PVALUE_KEY, () => this.addData((value as Date).toISOString()));
-        }));
-        break;
-      case RegExp:
-        this.process(value, () => this.addHash(2, () => {
-          this.addString(2, PTYPE_KEY);
-          this.addString(1, 'Regexp');
-          this.addString(2, PVALUE_KEY);
-          this.withPath(PVALUE_KEY, () => this.addData((value as RegExp).source));
-        }));
-        break;
-      case String:
-        this.addString(level, value.valueOf() as string);
-        break;
-      case Number:
-      case Boolean:
-        this.addData(value.valueOf() as number | boolean);
-        break;
-      case Sensitive:
+      case 'function':
         if (this.config.richData) {
-          this.process(value, () => this.addHash(2, () => {
+          // A constructor actually denotes a type
+          const tn = this.config.context.typeNames.nameForType(value as Function);
+          if (tn === undefined) {
+            throw new Error(`${this.pathToString()}: unable to serialize function ${value}`);
+          }
+          this.process(value, () => this.addHash(1, () => {
             this.addString(2, PTYPE_KEY);
-            this.addString(1, 'Sensitive');
-            this.addString(2, PVALUE_KEY);
-            this.withPath(PVALUE_KEY, () => this.toData(1, (value as Sensitive).unwrap()));
+            this.addString(1, tn);
           }));
         } else {
           this.unknownToStringWithWarning(level, value);
         }
         break;
-      case undefined:
-        this.addData(null);
-        break;
-      default:
-        if (this.config.richData) {
-          this.valueToDataHash(value);
-        } else {
-          this.unknownToStringWithWarning(1, value);
+      case 'object':
+        switch (value.constructor) {
+          case Object:
+            this.process(value, () => {
+              const h = (value as StringHash);
+              const keys = Object.keys(h);
+              this.addHash(keys.length, () => {
+                for (const key in value) {
+                  if (value.hasOwnProperty(key)) {
+                    const prop = value[key];
+                    if (typeof prop !== 'function') {
+                      this.addString(2, key);
+                      this.withPath(key, () => this.toData(1, prop));
+                    }
+                  }
+                }
+              });
+            });
+            break;
+          case Map:
+            this.process(value, () => {
+              const h = (value as Map<Value, Value>);
+              this.addHash(h.size, () => {
+                if (this.consumer.canDoComplexKeys() || isStringMap(h)) {
+                  h.forEach((value, key) => {
+                    this.toData(2, key);
+                    this.withPath(key, () => this.toData(1, value));
+                  });
+                } else {
+                  this.nonStringKeyedHashToData(h);
+                }
+              });
+            });
+            break;
+          case Array:
+            this.process(value, () => {
+              const arr = (value as Value[]);
+              this.addArray(arr.length, () => {
+                for (let idx = 0; idx < arr.length; idx++) {
+                  this.withPath(idx, () => this.toData(1, arr[idx]));
+                }
+              });
+            });
+            break;
+          case Date:
+            this.process(value, () => this.addHash(2, () => {
+              this.addString(2, PTYPE_KEY);
+              this.addString(1, 'Timestamp');
+              this.addString(2, PVALUE_KEY);
+              this.withPath(PVALUE_KEY, () => this.addData((value as Date).toISOString()));
+            }));
+            break;
+          case RegExp:
+            this.process(value, () => this.addHash(2, () => {
+              this.addString(2, PTYPE_KEY);
+              this.addString(1, 'Regexp');
+              this.addString(2, PVALUE_KEY);
+              this.withPath(PVALUE_KEY, () => this.addData((value as RegExp).source));
+            }));
+            break;
+          case String:
+            this.addString(level, value.valueOf() as string);
+            break;
+          case Number:
+          case Boolean:
+            this.addData(value.valueOf() as number | boolean);
+            break;
+          case Sensitive:
+            if (this.config.richData) {
+              this.process(value, () => this.addHash(2, () => {
+                this.addString(2, PTYPE_KEY);
+                this.addString(1, 'Sensitive');
+                this.addString(2, PVALUE_KEY);
+                this.withPath(PVALUE_KEY, () => this.toData(1, (value as Sensitive).unwrap()));
+              }));
+            } else {
+              this.unknownToStringWithWarning(level, value);
+            }
+            break;
+          case undefined:
+            this.addData(null);
+            break;
+          default:
+            if (this.config.richData) {
+              this.valueToDataHash(value);
+            } else {
+              this.unknownToStringWithWarning(1, value);
+            }
         }
-      }
     }
   }
 
-  private nonStringKeyedHashToData(hash : Map<Value, Value>) {
-    if(this.config.richData) {
+  private nonStringKeyedHashToData(hash: Map<Value, Value>) {
+    if (this.config.richData) {
       this.toKeyExtendedHash(hash);
       return;
     }
 
     this.process(hash, () => this.addHash(hash.size, () => hash.forEach((v, k) => {
       const s = strictString(k);
-      if(s !== undefined) {
+      if (s !== undefined) {
         this.addString(2, s);
         this.withPath(s, () => this.toData(1, v));
       } else {
@@ -213,7 +218,7 @@ class SerializerContext {
     })));
   }
 
-  private toKeyExtendedHash(hash : Map<Value, Value>) {
+  private toKeyExtendedHash(hash: Map<Value, Value>) {
     this.process(hash, () => this.addHash(2, () => {
       this.addString(2, PTYPE_KEY);
       this.addString(1, 'Hash');
@@ -225,7 +230,7 @@ class SerializerContext {
     }));
   }
 
-  private valueToDataHash(value : object) {
+  private valueToDataHash(value: object) {
     const pt = isPcoreObject(value) ? value.__ptype() : this.config.context.typeNames.nameForType(value.constructor);
     if (pt === undefined) {
       this.unknownToStringWithWarning(1, value);
@@ -239,7 +244,7 @@ class SerializerContext {
         this.addHash(es.length + 1, () => {
           this.addString(2, PTYPE_KEY);
           this.addString(1, pt);
-          for(const [k, v] of es) {
+          for (const [k, v] of es) {
             this.addString(2, k);
             this.toData(1, v);
           }
@@ -255,20 +260,20 @@ class SerializerContext {
     });
   }
 
-  private addArray(len : number, doer : () => void) {
+  private addArray(len: number, doer: () => void) {
     this.refIndex++;
     this.consumer.addArray(len, doer);
   }
 
-  private addHash(len : number, doer : () => void) {
+  private addHash(len: number, doer: () => void) {
     this.refIndex++;
     this.consumer.addHash(len, doer);
   }
 
-  private addString(level : number, value : string) {
-    if(this.dedupLevel >= level && value.length > this.consumer.stringDedupThreshold()) {
+  private addString(level: number, value: string) {
+    if (this.dedupLevel >= level && value.length > this.consumer.stringDedupThreshold()) {
       const ref = this.strings[value];
-      if(ref !== undefined) {
+      if (ref !== undefined) {
         this.consumer.addRef(ref);
         return;
       } else {
@@ -278,22 +283,22 @@ class SerializerContext {
     this.addData(value);
   }
 
-  private addData(value : boolean | number | string | null) {
+  private addData(value: boolean|number|string|null) {
     this.refIndex++;
     this.consumer.add(value);
   }
 
-  private pathToString() : string {
+  private pathToString(): string {
     return this.path.join('/');
   }
 
-  private process(value : Value, doer : () => void) : void {
-    if(this.dedupLevel === DedupLevel.NoDedup) {
+  private process(value: Value, doer: () => void): void {
+    if (this.dedupLevel === DedupLevel.NoDedup) {
       doer();
       return;
     }
     const ref = this.values.get(value);
-    if(ref !== undefined) {
+    if (ref !== undefined) {
       this.consumer.addRef(ref);
     } else {
       this.values.set(value, this.refIndex);
@@ -301,28 +306,29 @@ class SerializerContext {
     }
   }
 
-  private unknownToStringWithWarning(level : DedupLevel, value : NotNull) {
+  private unknownToStringWithWarning(level: DedupLevel, value: NotNull) {
     const s = value.toString();
-    let ts : string = typeof value;
-    if(ts === 'object') {
+    let ts: string = typeof value;
+    if (ts === 'object') {
       ts = value.constructor.name;
     }
-    this.config.context.logger.warning("%s contains a value of type %s. It will be converted to the string '%s'", this.pathToString(), ts, s);
+    this.config.context.logger.warning(
+        '%s contains a value of type %s. It will be converted to the string \'%s\'', this.pathToString(), ts, s);
     this.addString(level, s);
   }
 
-  private withPath(value : Value, doer : () => void) : void {
+  private withPath(value: Value, doer: () => void): void {
     this.path.push(value);
     doer();
     this.path.pop();
   }
 
-  private static initializerFor(value : object) : StringHash {
+  private static initializerFor(value: object): StringHash {
     const init = {};
-    for(const key in value) {
-      if(value.hasOwnProperty(key)) {
+    for (const key in value) {
+      if (value.hasOwnProperty(key)) {
         const prop = value[key];
-        if(typeof prop !== 'function') {
+        if (typeof prop !== 'function') {
           init[key] = prop;
         }
       }

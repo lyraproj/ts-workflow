@@ -10,7 +10,7 @@ describe('inferWorkflowTypes', () => {
       {
         vpc: {
           input: {
-            tags: "{ [s: string]: string }"
+            tags: "{[s: string]: string}"
           },
           type: "Aws::Vpc"
         },
@@ -24,13 +24,13 @@ describe('inferWorkflowTypes', () => {
         },
         subnet: {
           input: {
-            tags: "{ [s: string]: string }", vpcId: "string"
+            tags: "{[s: string]: string}", vpcId: "string"
           },
           type: "Aws::Subnet"
         },
         routetable: {
           input: {
-            tags: "{ [s: string]: string }", vpcId: "string"
+            tags: "{[s: string]: string}", vpcId: "string"
           },
           type: "Aws::RouteTable"
         }

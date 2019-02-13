@@ -1,6 +1,7 @@
 {
   "extends": "gts/tslint.json",
   "rules": {
-    "switch-default": false
+    "switch-default": false,
+    "max-line-length": [true, 120]
   }
 }

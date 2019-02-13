@@ -1,26 +1,26 @@
-import {vsprintf} from "sprintf-js";
-import {Value} from "./Util";
+import {vsprintf} from 'sprintf-js';
+import {Value} from './Util';
 
 export enum LogLevel {
-  Debug = "DEBUG",
-  Info = "INFO",
-  Warning = "WARNING",
-  Error = "ERROR"
+  Debug = 'DEBUG',
+  Info = 'INFO',
+  Warning = 'WARNING',
+  Error = 'ERROR'
 }
 
 export interface Logger {
-  info(format : string, ...args : Value[]);
-  warning(format : string, ...args : Value[]);
-  debug(format : string, ...args : Value[]);
-  error(format : string, ...args : Value[]);
+  info(format: string, ...args: Value[]);
+  warning(format: string, ...args: Value[]);
+  debug(format: string, ...args: Value[]);
+  error(format: string, ...args: Value[]);
 }
 
 export class LogEntry {
-  readonly level : LogLevel;
-  readonly format : string;
-  readonly args : Value[];
+  readonly level: LogLevel;
+  readonly format: string;
+  readonly args: Value[];
 
-  constructor(level : LogLevel, format : string, args : Value[]) {
+  constructor(level: LogLevel, format: string, args: Value[]) {
     this.level = level;
     this.format = format;
     this.args = args;
@@ -36,9 +36,9 @@ export class LogEntry {
 }
 
 export abstract class AbstractLogger implements Logger {
-  readonly entries : LogEntry[] = new Array<LogEntry>();
+  readonly entries: LogEntry[] = new Array<LogEntry>();
 
-  protected abstract log(entry : LogEntry);
+  protected abstract log(entry: LogEntry);
 
   debug(format: string, ...args: Value[]) {
     this.log(new LogEntry(LogLevel.Debug, format, args));
@@ -58,33 +58,32 @@ export abstract class AbstractLogger implements Logger {
 }
 
 export class ArrayLogger extends AbstractLogger {
-  readonly entries : LogEntry[] = new Array<LogEntry>();
+  readonly entries: LogEntry[] = new Array<LogEntry>();
 
-  protected log(entry : LogEntry) {
+  protected log(entry: LogEntry) {
     this.entries.push(entry);
   }
 
-  logEntries() : ReadonlyArray<LogEntry> {
+  logEntries(): ReadonlyArray<LogEntry> {
     return this.entries;
   }
 }
 
 export class ConsoleLogger extends AbstractLogger {
-  protected log(entry : LogEntry) {
+  protected log(entry: LogEntry) {
     console.log(entry.toString());
   }
 }
 
 export class StreamLogger extends AbstractLogger {
-  private readonly stream : NodeJS.WritableStream;
+  private readonly stream: NodeJS.WritableStream;
 
-  constructor(stream : NodeJS.WritableStream) {
+  constructor(stream: NodeJS.WritableStream) {
     super();
     this.stream = stream;
   }
 
-  protected log(entry : LogEntry) {
+  protected log(entry: LogEntry) {
     this.stream.write(entry.toStringNL());
   }
 }
-

@@ -1,20 +1,20 @@
-import {PcoreValue} from "./Serializer";
-import {StringHash, Value} from "./Util";
+import {PcoreValue} from './Serializer';
+import {StringHash, Value} from './Util';
 
 export class Deferred implements PcoreValue {
-  readonly name : string;
-  readonly args : Value[];
+  readonly name: string;
+  readonly args: Value[];
 
-  constructor(name : string, ...args : Value[]) {
+  constructor(name: string, ...args: Value[]) {
     this.name = name;
     this.args = args;
   }
 
   __ptype(): string {
-    return "Deferred";
+    return 'Deferred';
   }
 
   __pvalue(): StringHash {
-    return { name: this.name, arguments: this.args };
+    return {name: this.name, arguments: this.args};
   }
 }

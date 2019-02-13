@@ -1,11 +1,12 @@
-import {PcoreValue} from "./Serializer";
-import {toPcoreType} from "./TypeTransformer";
-import * as util from "util";
+import * as util from 'util';
+
+import {PcoreValue} from './Serializer';
+import {toPcoreType} from './TypeTransformer';
 
 export class Type implements PcoreValue {
-  readonly typeString : string;
+  readonly typeString: string;
 
-  constructor(typeString : string) {
+  constructor(typeString: string) {
     this.typeString = toPcoreType(typeString);
   }
 
@@ -14,7 +15,7 @@ export class Type implements PcoreValue {
   }
 
   __ptype(): string {
-    return "Type";
+    return 'Type';
   }
 
   __pvalue(): string {

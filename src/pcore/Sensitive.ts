@@ -1,17 +1,17 @@
-import {Value} from "./Util";
+import {Value} from './Util';
 
 export class Sensitive {
-  private readonly value : Value;
+  private readonly value: Value;
 
-  constructor(value : Value) {
+  constructor(value: Value) {
     this.value = value;
   }
 
-  toString() : string {
+  toString(): string {
     return 'Sensitive [value redacted]';
   }
 
-  unwrap() : Value {
+  unwrap(): Value {
     return this.value;
   }
 }
