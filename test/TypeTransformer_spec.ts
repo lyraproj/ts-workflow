@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-import {toPcoreType} from "../build/src/pcore/TypeTransformer";
+import {toPcoreType} from "../lib/pcore/TypeTransformer";
 
 describe('toPcoreType', () => {
   it('should convert number to Float', () => {

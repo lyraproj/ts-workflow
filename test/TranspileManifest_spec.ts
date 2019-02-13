@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-import {extractTypeInfo} from "../src/servicesdk/ManifestTypes";
+import {extractTypeInfo} from "../lib/servicesdk/ManifestTypes";
 
 describe('inferWorkflowTypes', () => {
   it('finds types', () => {

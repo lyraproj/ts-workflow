@@ -5,13 +5,14 @@
     "lib": ["es2017", "dom"],
     "target": "es2017",
     "rootDir": ".",
-    "outDir": "build",
+    "outDir": "./dist",
     "sourceMap": true,
-    "rootDirs": ["src", "generated"]
+    "rootDirs": [
+      "lib", "generated"]
   },
   "include": [
-    "src/*.ts",
-    "src/**/*.ts",
+    "lib/*.ts",
+    "lib/**/*.ts",
     "examples/*.ts"
   ]
 }

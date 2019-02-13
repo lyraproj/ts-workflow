@@ -2,16 +2,23 @@
   "name": "lyra-workflow",
   "version": "0.0.0",
   "description": "Lyra Workflow Back-end for TypeScript",
-  "main": "build/src/index.js",
-  "types": "build/src/index.d.ts",
+  "main": "dist/lib/index.js",
+  "types": "dist/lib/index.d.ts",
   "files": [
-    "build/src",
-    "generated",
+    "dist/lib",
     "LICENSE",
     "README.md"
   ],
   "license": "Apache-2.0",
   "author": "Puppet Inc.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyraproj/ts-workflow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lyraproj/lyra/issues"
+  },
+  "homepage":"https://github.com/lyraproj/ts-workflow#readme",
   "keywords": [],
   "scripts": {
     "test": "jest --forceExit --coverage --verbose",

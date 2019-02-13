@@ -1,4 +1,4 @@
-import {action, resource, workflow} from '../src/servicesdk/ServiceBuilder';
+import {action, resource, workflow} from '../lib/servicesdk/ServiceBuilder';
 
 import * as Aws from './Aws';
 

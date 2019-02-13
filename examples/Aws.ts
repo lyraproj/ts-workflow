@@ -1,5 +1,5 @@
-import {PcoreValue} from '../src/pcore/Serializer';
-import {Value} from '../src/pcore/Util';
+import {PcoreValue} from '../lib/pcore/Serializer';
+import {Value} from '../lib/pcore/Util';
 
 export class BlockDeviceMapping implements PcoreValue {
   readonly deviceName: string;

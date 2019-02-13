@@ -1,12 +1,12 @@
 /// <reference types="jest" />
-import {PcoreObject, PcoreValue, Serializer} from "../src/pcore/Serializer";
-import {Context} from "../src/pcore/Context";
-import {ArrayLogger} from "../src/pcore/Logger";
-import {MemCollector} from "../src/pcore/Collector";
-import {StringHash} from "../src/pcore/Util";
-import {Namespace, TypedName} from "../src/pcore/TypedName";
-import {Parameter} from "../src/pcore/Parameter";
-import {Deferred} from "../src/pcore/Deferred";
+import {PcoreObject, PcoreValue, Serializer} from "../lib/pcore/Serializer";
+import {Context} from "../lib/pcore/Context";
+import {ArrayLogger} from "../lib/pcore/Logger";
+import {MemCollector} from "../lib/pcore/Collector";
+import {StringHash} from "../lib/pcore/Util";
+import {Namespace, TypedName} from "../lib/pcore/TypedName";
+import {Parameter} from "../lib/pcore/Parameter";
+import {Deferred} from "../lib/pcore/Deferred";
 
 export namespace My {
   export class Thing {
