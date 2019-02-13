@@ -81,14 +81,14 @@ describe('Serializer', () => {
   });
 
   it('streams a Timestamp', () => {
-    const obj = new Date("2019-02-04T02:13:20.1234");
+    const obj = new Date("2019-02-04T02:13:20.1234Z");
     const ctx = new Context(glob, new ArrayLogger());
     const collector = new MemCollector();
     const ser = new Serializer(ctx, {});
     ser.convert(obj, collector);
 
     const createdObj = collector.value();
-    const expectedObj = new Map(Object.entries({__ptype: 'Timestamp', __pvalue: '2019-02-04T01:13:20.123Z'}));
+    const expectedObj = new Map(Object.entries({__ptype: 'Timestamp', __pvalue: '2019-02-04T02:13:20.123Z'}));
     expect(createdObj).toEqual(expectedObj);
   });
 
