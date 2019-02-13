@@ -1,0 +1,42 @@
+{
+  "name": "",
+  "version": "0.0.0",
+  "description": "",
+  "main": "build/src/index.js",
+  "types": "build/src/index.d.ts",
+  "files": [
+    "build/src"
+  ],
+  "license": "Apache-2.0",
+  "keywords": [],
+  "scripts": {
+    "test": "jest --forceExit --coverage --verbose",
+    "check": "gts check",
+    "clean": "gts clean",
+    "compile": "tsc -p .",
+    "fix": "gts fix",
+    "prepare": "npm run compile",
+    "pretest": "npm run compile",
+    "posttest": "npm run check",
+    "protogen": "scripts/gen_js.sh"
+  },
+  "dependencies": {
+    "@types/node": "^10.12.24",
+    "google-protobuf": "^3.7.0-rc.2",
+    "grpc": "^1.18.0",
+    "grpc-health-check": "^1.6.6",
+    "grpc-tools": "^1.6.6",
+    "grpc_tools_node_protoc_ts": "^2.5.0",
+    "net": "^1.0.2",
+    "require-from-string": "^2.0.2",
+    "source-map-resolve": "^0.5.2",
+    "sprintf-js": "^1.1.2",
+    "typescript": "~3.1.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^23.3.14",
+    "gts": "^0.9.0",
+    "jest": "^23.6.0",
+    "ts-jest": "^23.10.5"
+  }
+}
