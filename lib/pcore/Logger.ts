@@ -1,4 +1,5 @@
 import {vsprintf} from 'sprintf-js';
+
 import {Value} from './Util';
 
 export enum LogLevel {
@@ -9,10 +10,10 @@ export enum LogLevel {
 }
 
 export interface Logger {
-  info(format: string, ...args: Value[]);
-  warning(format: string, ...args: Value[]);
-  debug(format: string, ...args: Value[]);
-  error(format: string, ...args: Value[]);
+  info(format: string, ...args: Value[]): void;
+  warning(format: string, ...args: Value[]): void;
+  debug(format: string, ...args: Value[]): void;
+  error(format: string, ...args: Value[]): void;
 }
 
 export class LogEntry {
@@ -38,7 +39,7 @@ export class LogEntry {
 export abstract class AbstractLogger implements Logger {
   readonly entries: LogEntry[] = new Array<LogEntry>();
 
-  protected abstract log(entry: LogEntry);
+  protected abstract log(entry: LogEntry): void;
 
   debug(format: string, ...args: Value[]) {
     this.log(new LogEntry(LogLevel.Debug, format, args));

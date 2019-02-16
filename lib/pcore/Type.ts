@@ -10,7 +10,7 @@ export class Type implements PcoreValue {
     this.typeString = toPcoreType(typeString);
   }
 
-  [util.inspect.custom](depth, options) {
+  [util.inspect.custom]() {
     return this.typeString;
   }
 

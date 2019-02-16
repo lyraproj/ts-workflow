@@ -1,4 +1,4 @@
-import {action, resource, workflow} from '../servicesdk/ServiceBuilder';
+import {action, resource, ServiceBuilder} from '..';
 
 import * as Aws from './Aws';
 
@@ -6,7 +6,8 @@ function makeRouteTable(vpcId: string, tags: {[s: string]: string}): Aws.RouteTa
   return new Aws.RouteTable({vpcId, tags});
 }
 
-export = workflow({
+const wf = {
+  source: __filename,
   input: {tags: {type: 'StringHash', lookup: 'aws.tags'}},
 
   output: {vpcId: 'string', subnetId: 'string', routetableId: 'string'},
@@ -51,4 +52,9 @@ export = workflow({
       state: (vpcId: string, tags: {[s: string]: string}) => makeRouteTable(vpcId, tags)
     })
   }
-});
+};
+
+const sb = new ServiceBuilder('My::Service');
+sb.workflow(wf);
+const server = sb.build(global);
+console.log(server.metadata());

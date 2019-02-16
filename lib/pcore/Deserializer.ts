@@ -1,23 +1,21 @@
-import {Value} from 'google-protobuf/google/protobuf/struct_pb';
-
 import {MemCollector} from './Collector';
 import {Context} from './Context';
 import {Data, StringDataMap} from './Data';
 import {Sensitive} from './Sensitive';
 import {DEFAULT, PTYPE_KEY, PVALUE_KEY} from './Serializer';
-import {isStringMap} from './Util';
+import {isStringMap, Value} from './Util';
 
 export class Deserializer extends MemCollector {
   private readonly allowUnresolved: boolean;
   private readonly context: Context;
   private readonly converted: Map<Data, Value>;
-  private val: Value;
+  private val?: Value;
 
   constructor(ctx: Context, options: {allow_unresolved?: boolean}) {
     super();
     this.allowUnresolved = !!options.allow_unresolved;
     this.context = ctx;
-    this.converted = new Map<Value, Value>();
+    this.converted = new Map<Data, Value>();
   }
 
   value(): Value {
@@ -47,10 +45,11 @@ export class Deserializer extends MemCollector {
         return this.convertOther(value, pcoreType);
       }
     }
+    return null;
   }
 
-  private convertHash(hash: Map<string, Value>): Map<Value, Value> {
-    const value = (hash.get(PVALUE_KEY) as Value[]);
+  private convertHash(hash: Map<string, Data>): Map<Value, Value> {
+    const value = (hash.get(PVALUE_KEY) as Data[]);
     const result = new Map<Value, Value>();
     this.converted.set(hash, result);
     for (let idx = 0; idx < value.length; idx += 2) {
@@ -69,7 +68,7 @@ export class Deserializer extends MemCollector {
     return sv;
   }
 
-  private convertOther(hash: Map<string, Value>, pcoreType: Value): Value {
+  private convertOther(hash: Map<string, Value>, pcoreType: Data): Value {
     let value = hash.get(PVALUE_KEY);
     if (value === undefined) {
       hash.delete(PTYPE_KEY);
@@ -79,7 +78,7 @@ export class Deserializer extends MemCollector {
       // Type deserialization is not supported in typescript
       throw Error('Deserialization of types is not supported');
     }
-    const typ = this.context.parseType(pcoreType);
+    const typ = typeof pcoreType === 'string' ? this.context.parseType(pcoreType as string) : undefined;
     if (typ === undefined) {
       if (this.allowUnresolved) {
         return value;

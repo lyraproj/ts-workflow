@@ -1,7 +1,6 @@
 import {Data} from '../pcore/Data';
 
 import * as datapb from './data_pb';
-import {NullValue} from './data_pb';
 
 export function fromData(data: datapb.Data): Data {
   switch (data.getKindCase().valueOf()) {
@@ -58,7 +57,7 @@ export function toData(value: Data): datapb.Data {
       break;
     case 'object':
       if (value === null) {
-        d.setUndefValue(NullValue.NULL_VALUE);
+        d.setUndefValue(datapb.NullValue.NULL_VALUE);
       } else {
         switch (value.constructor) {
           case Array:
@@ -72,7 +71,7 @@ export function toData(value: Data): datapb.Data {
             d = toData(value.valueOf() as string | number | boolean);
             break;
           case undefined:
-            d.setUndefValue(NullValue.NULL_VALUE);
+            d.setUndefValue(datapb.NullValue.NULL_VALUE);
             break;
           default:
             d.setHashValue(toDataHash(value as {}));

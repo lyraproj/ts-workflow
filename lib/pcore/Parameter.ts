@@ -23,8 +23,8 @@ export class Parameter implements PcoreValue {
     this.captures = captures;
   }
 
-  [util.inspect.custom](depth, options) {
-    return `Parameter ${util.inspect(this.__pvalue(), depth, options)}`;
+  [util.inspect.custom](depth: number, options: util.InspectOptions) {
+    return `Parameter ${util.inspect(this.__pvalue(), options)}`;
   }
 
   __ptype(): string {
@@ -32,7 +32,7 @@ export class Parameter implements PcoreValue {
   }
 
   __pvalue(): StringHash {
-    const m = {name: this.name, type: this.type};
+    const m: StringHash = {name: this.name, type: this.type};
     if (this.value !== undefined) {
       m['value'] = this.value;
     }

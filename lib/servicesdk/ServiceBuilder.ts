@@ -1,3 +1,4 @@
+import * as path from 'path';
 import * as util from 'util';
 
 import {Data} from '../pcore/Data';
@@ -8,15 +9,13 @@ import {anyType, Type} from '../pcore/Type';
 import {Namespace, TypedName} from '../pcore/TypedName';
 import {isHash, StringHash, Value} from '../pcore/Util';
 
-/**
- * A StateProducer produces a state based on input variables
- */
-export type StateProducer = Function;
+import {extractTypeInfoByPath} from './ManifestTypes';
+import {Service} from './Service';
 
 /**
  * A StateProducer produces a state based on input variables
  */
-export type ActionFunction = Function;
+export type StateProducer = Function;
 
 export type InParam = {
   type?: string,
@@ -32,6 +31,7 @@ export type OutParam = {
  * The ActivityMap contains the properties common to all Activities
  */
 export interface ActivityMap {
+  name?: string;
   style?: 'action'|'resource'|'workflow';
   input?: string|string[]|{[s: string]: string | InParam};
   output?: string|string[]|{[s: string]: string | OutParam};
@@ -47,7 +47,7 @@ export function isActivityMap(m: ActivityMap): m is ActivityMap {
  * The ActionMap contains the properties of a workflow action.
  */
 export interface ActionMap extends ActivityMap {
-  do: ActionFunction;
+  do: Function;
 }
 
 /**
@@ -63,51 +63,64 @@ export interface WorkflowMap extends ActivityMap {
   activities: {[s: string]: ActivityMap};
 }
 
-export function action(a: ActionMap): ActivityMap {
+export interface TopLevelActivityMap extends ActivityMap {
+  source: string;
+}
+
+export function action(a: ActionMap): ActionMap {
   a.style = 'action';
   return a;
 }
 
-export function resource(a: ResourceMap): ActivityMap {
+export function resource(a: ResourceMap): ResourceMap {
   a.style = 'resource';
   return a;
 }
 
-export function workflow(a: WorkflowMap): ActivityMap {
+export function workflow(a: WorkflowMap): WorkflowMap {
   a.style = 'workflow';
   return a;
+}
+
+export function activityName(fileName: string): string {
+  // TODO: Take file name relative to 'workflows' directory and create
+  //  a qualified name based on that
+  return path.basename(fileName, '.js');
 }
 
 export class ServiceBuilder {
   readonly serviceId: TypedName;
   readonly definitions: Definition[] = [];
   readonly stateProducers: {[s: string]: StateProducer} = {};
-  readonly actionFunctions: StringHash = {};
+  readonly actionFunctions: {[s: string]: Function} = {};
 
   constructor(serviceName: string) {
     this.serviceId = new TypedName(Namespace.NsService, serviceName);
   }
 
-  fromMap(n: string, a: ActivityMap, inferred: StringHash) {
-    switch (a.style) {
-      case 'action':
-        const ab = new ActionBuilder(n, null);
-        ab.fromMap((a as ActionMap));
-        this.definitions.push(ab.build(this, inferred));
-        break;
-      case 'resource':
-        const rb = new ResourceBuilder(n, null);
-        rb.fromMap((a as ResourceMap));
-        this.definitions.push(rb.build(this, inferred));
-        break;
-      case 'workflow':
-        const wb = new WorkflowBuilder(n, null);
-        wb.fromMap((a as WorkflowMap));
-        this.definitions.push(wb.build(this, inferred));
-        break;
-      default:
-        throw new Error(`activity hash for ${n} has no valid style`);
-    }
+  build(nsBase: Value): Service {
+    const s = new Service(nsBase, this, 2000, 21000);
+    return s;
+  }
+
+  workflow(wm: WorkflowMap&TopLevelActivityMap) {
+    this.fromMap(wm.source, WorkflowBuilder, workflow(wm));
+  }
+
+  resource(rm: ResourceMap&TopLevelActivityMap) {
+    this.fromMap(rm.source, ResourceBuilder, resource(rm));
+  }
+
+  action(am: ActionMap&TopLevelActivityMap) {
+    this.fromMap(am.source, ActionBuilder, action(am));
+  }
+
+  private fromMap<T extends ActivityBuilder>(
+      source: string, C: {new(n: string, p?: ActivityBuilder): T}, map: ActivityMap): void {
+    const an = activityName(source);
+    const ab = new C(an);
+    ab.fromMap(map);
+    this.definitions.push(ab.build(this, extractTypeInfoByPath(source, ab.getName())));
   }
 }
 
@@ -131,16 +144,16 @@ export class Definition implements PcoreObject {
   }
 }
 
-export class ActivityBuilder {
-  private readonly name: string;
+export abstract class ActivityBuilder {
   private readonly parent: ActivityBuilder|null;
+  private name: string;
   private in ?: {[s: string]: Parameter};
   private out?: {[s: string]: Parameter};
   private guard?: string;
 
-  constructor(name: string, parent: ActivityBuilder|null) {
+  constructor(name: string, parent?: ActivityBuilder) {
     this.name = name;
-    this.parent = parent;
+    this.parent = parent === undefined ? null : parent;
   }
 
   amendWithInferredTypes(inferred: StringHash) {
@@ -167,6 +180,9 @@ export class ActivityBuilder {
   }
 
   fromMap(m: ActivityMap) {
+    if (m.name !== undefined) {
+      this.name = m.name;
+    }
     if (m.when !== undefined) {
       this.when(m.when);
     }
@@ -200,7 +216,7 @@ export class ActivityBuilder {
     }
   }
 
-  build(sb: ServiceBuilder, inferred: StringHash): Definition {
+  build(sb: ServiceBuilder, inferred: StringHash|null): Definition {
     if (inferred !== null) {
       this.amendWithInferredTypes(inferred);
     }
@@ -214,7 +230,7 @@ export class ActivityBuilder {
 
   private convertParams(isIn: boolean, params: string|string[]|{[s: string]: string | InParam | OutParam}):
       {[s: string]: Parameter} {
-    const result = {};
+    const result: {[s: string]: Parameter} = {};
     if (typeof params === 'string') {
       // A single untyped parameter name
       result[params] = new Parameter(params, anyType);
@@ -238,14 +254,16 @@ export class ActivityBuilder {
           // Input parameters can have lookup, output parameters can have alias.
           let alu: Value;
           if (isIn) {
-            if (value.hasOwnProperty('lookup')) {
-              alu = new Deferred('lookup', value['lookup']);
+            const luv = (value as InParam).lookup;
+            if (luv !== undefined) {
+              alu = new Deferred('lookup', luv);
             } else {
               throw new Error(`illegal input parameter assignment for parameter ${key}: ${value.toString()}`);
             }
           } else {
-            if (value.hasOwnProperty('alias')) {
-              alu = value['alias'];
+            const av = (value as OutParam).alias;
+            if (av !== undefined) {
+              alu = av;
             } else {
               throw new Error(`illegal input parameter assignment for parameter ${key}: ${value.toString()}`);
             }
@@ -257,8 +275,8 @@ export class ActivityBuilder {
     return result;
   }
 
-  protected definitionProperties(sb: ServiceBuilder, inferred: StringHash): StringHash {
-    const props = {};
+  protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
+    const props: StringHash = {};
     if (this.in !== undefined) {
       props['input'] = this.in;
     }
@@ -299,7 +317,7 @@ export class ResourceBuilder extends ActivityBuilder {
     this.typ = t;
   }
 
-  build(sb: ServiceBuilder, inferred: StringHash): Definition {
+  build(sb: ServiceBuilder, inferred: StringHash|null): Definition {
     if (this.stateProducer !== undefined) {
       sb.stateProducers[this.getName()] = this.stateProducer;
     }
@@ -317,7 +335,7 @@ export class ResourceBuilder extends ActivityBuilder {
     }
   }
 
-  protected definitionProperties(sb: ServiceBuilder, inferred: StringHash): StringHash {
+  protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
     const props = super.definitionProperties(sb, inferred);
     if (this.extId !== undefined) {
       props['external_id'] = this.extId;
@@ -330,14 +348,14 @@ export class ResourceBuilder extends ActivityBuilder {
 }
 
 export class ActionBuilder extends ActivityBuilder {
-  private actionFunction?: ActionFunction;
+  private actionFunction?: Function;
 
   do
-    (actionFunction: ActionFunction) {
+    (actionFunction: Function) {
       this.actionFunction = actionFunction;
     }
 
-  build(sb: ServiceBuilder, inferred: StringHash): Definition {
+  build(sb: ServiceBuilder, inferred: StringHash|null): Definition {
     if (this.actionFunction !== undefined) {
       sb.actionFunctions[this.getName()] = this.actionFunction;
     }
@@ -406,7 +424,7 @@ export class WorkflowBuilder extends ActivityBuilder {
     this.activities.push(rb);
   }
 
-  protected definitionProperties(sb: ServiceBuilder, inferred: StringHash): StringHash {
+  protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
     const props = super.definitionProperties(sb, inferred);
     props['activities'] = this.activities.map(ab => ab.build(sb, inferred));
     return props;

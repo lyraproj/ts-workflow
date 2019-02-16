@@ -23,7 +23,7 @@ export class TypedName implements PcoreValue {
   readonly authority: URL;
   readonly namespace: Namespace;
   readonly name: string;
-  readonly canonical;
+  readonly canonical: string;
   readonly parts: string[];
 
   constructor(namespace: Namespace, name: string, authority: URL = runtimeAuthority) {
@@ -49,8 +49,8 @@ export class TypedName implements PcoreValue {
     return `${this.authority}/${this.namespace}/${this.name}`;
   }
 
-  [util.inspect.custom](depth, options) {
-    return `TypedName ${util.inspect(this.__pvalue(), depth, options)}`;
+  [util.inspect.custom](depth: number, options: util.InspectOptions) {
+    return `TypedName ${util.inspect(this.__pvalue(), options)}`;
   }
 
   __ptype(): string {
@@ -58,7 +58,7 @@ export class TypedName implements PcoreValue {
   }
 
   __pvalue(): string|StringHash {
-    const mv = {namespace: this.namespace.toString(), name: this.name};
+    const mv: StringHash = {namespace: this.namespace.toString(), name: this.name};
     if (this.authority !== runtimeAuthority) {
       mv['authority'] = this.authority.toString();
     }

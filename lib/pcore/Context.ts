@@ -1,7 +1,7 @@
 import {Logger} from './Logger';
 import {isHash, makeBoolean, makeFloat, makeInt, makeString, StringHash, Value} from './Util';
 
-const wellknownTypes = {
+const wellknownTypes: {[s: string]: Function} = {
   Boolean: makeBoolean,
   Integer: makeInt,
   Float: makeFloat,
@@ -15,7 +15,7 @@ const wellknownTypes = {
 export class TypeNames {
   private typeMap: Map<Function, string>;
 
-  constructor(base: {}) {
+  constructor(base: Value) {
     const tn = new Map<Function, string>();
     TypeNames.createTypeMap(null, base, tn);
     this.typeMap = tn;
@@ -36,9 +36,10 @@ export class TypeNames {
     }
 
     if (typeof base === 'object') {
-      for (const key in base) {
+      const hb = base as {[s: string]: Value};
+      for (const key in hb) {
         if (key.match(/^[A-Z]/)) {
-          TypeNames.createTypeMap(ns === null ? key : ns + '::' + key, base[key], map);
+          TypeNames.createTypeMap(ns === null ? key : ns + '::' + key, hb[key], map);
         }
       }
     }
@@ -46,11 +47,11 @@ export class TypeNames {
 }
 
 export class Context {
-  private readonly nsBase: StringHash;
+  private readonly nsBase: Value;
   readonly logger: Logger;
   readonly typeNames: TypeNames;
 
-  constructor(nsBase: StringHash, logger: Logger) {
+  constructor(nsBase: Value, logger: Logger) {
     this.nsBase = nsBase;
     this.typeNames = new TypeNames(nsBase);
     this.logger = logger;
@@ -74,7 +75,9 @@ export class Context {
 
     let c: Value|undefined = this.nsBase;
     for (const part of parts) {
-      c = c === null ? undefined : c[part];
+      if (isHash(c)) {
+        c = (c as StringHash)[part];
+      }
       if (c === undefined) {
         break;
       }
@@ -89,6 +92,7 @@ export class Context {
   createInstance(type: Function, value: Value): Value {
     const tf = () => {};
     tf.prototype = type.prototype;
+    // @ts-ignore
     const inst = new tf();
 
     if (isHash(value)) {
@@ -100,7 +104,7 @@ export class Context {
       if (type.prototype.__ptype !== undefined) {
         type.apply(inst, [value]);
       } else {
-        type.apply(inst, ks.map(k => value[k]));
+        type.apply(inst, ks.map(k => (value as StringHash)[k]));
       }
       return inst;
     }

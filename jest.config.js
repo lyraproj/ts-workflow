@@ -58,7 +58,7 @@ module.exports = {
   globals: {
     "ts-jest": {
       "tsConfig": "tsconfig.json"
-    }
+    },
   },
 
   // An array of directory names to be searched recursively up from the requiring module's location
@@ -75,6 +75,11 @@ module.exports = {
 
   // A map from regular expressions to module names that allow to stub out resources with a single module
   // moduleNameMapper: {},
+  moduleNameMapper: {
+    ".*/data_pb$": '<rootDir>/generated/datapb/data_pb.js',
+    ".*/service_grpc_pb$": '<rootDir>/generated/servicepb/service_grpc_pb.js',
+    ".*/service_pb$": '<rootDir>/generated/servicepb/service_pb.js'
+  },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
   // modulePathIgnorePatterns: [],

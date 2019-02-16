@@ -14,10 +14,12 @@ export interface PcoreValue extends PcoreObject {
 }
 
 export function isPcoreObject(value: object): value is PcoreObject {
+  // @ts-ignore
   return value !== null && typeof value[PTYPE_KEY] === 'function';
 }
 
 export function isPcoreValue(value: object): value is PcoreValue {
+  // @ts-ignore
   return value !== null && typeof value[PVALUE_KEY] === 'function';
 }
 
@@ -33,10 +35,10 @@ const enum DedupLevel {
 export interface ValueConsumer {
   canDoBinary(): boolean;
   canDoComplexKeys(): boolean;
-  add(value: boolean|number|string|Uint8Array|null);
-  addArray(len: number, doer: () => void);
-  addHash(len: number, doer: () => void);
-  addRef(ref: number);
+  add(value: boolean|number|string|Uint8Array|null): void;
+  addArray(len: number, doer: () => void): void;
+  addHash(len: number, doer: () => void): void;
+  addRef(ref: number): void;
   stringDedupThreshold(): number;
 }
 
@@ -115,9 +117,9 @@ class SerializerContext {
               const h = (value as StringHash);
               const keys = Object.keys(h);
               this.addHash(keys.length, () => {
-                for (const key in value) {
+                for (const key in h) {
                   if (value.hasOwnProperty(key)) {
-                    const prop = value[key];
+                    const prop = h[key];
                     if (typeof prop !== 'function') {
                       this.addString(2, key);
                       this.withPath(key, () => this.toData(1, prop));
@@ -324,10 +326,11 @@ class SerializerContext {
   }
 
   private static initializerFor(value: object): StringHash {
-    const init = {};
-    for (const key in value) {
-      if (value.hasOwnProperty(key)) {
-        const prop = value[key];
+    const init: StringHash = {};
+    const h = value as StringHash;
+    for (const key in h) {
+      if (h.hasOwnProperty(key)) {
+        const prop = h[key];
         if (typeof prop !== 'function') {
           init[key] = prop;
         }

@@ -1,6 +1,6 @@
 {
   "name": "lyra-workflow",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Lyra Workflow Back-end for TypeScript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,7 +21,7 @@
   "homepage": "https://github.com/lyraproj/ts-workflow#readme",
   "keywords": [],
   "scripts": {
-    "test": "jest --forceExit --coverage --verbose",
+    "test": "jest --verbose --coverage --detectOpenHandles",
     "check": "gts check",
     "clean": "gts clean",
     "compile": "tsc -p .",
@@ -36,11 +36,14 @@
     "test"
   ],
   "dependencies": {
+    "@types/google-protobuf": "^3.2.7",
     "@types/node": "^10.12.26",
+    "@types/sprintf-js": "^1.1.2",
     "google-protobuf": "^3.7.0-rc.2",
     "grpc": "^1.18.0",
-    "grpc-health-check": "^1.6.6",
+    "grpc-ts-health-check": "^1.0.10",
     "net": "^1.0.2",
+    "protobufjs": "^6.8.8",
     "require-from-string": "^2.0.2",
     "source-map-resolve": "^0.5.2",
     "sprintf-js": "^1.1.2",

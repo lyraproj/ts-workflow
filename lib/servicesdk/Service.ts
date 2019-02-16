@@ -1,6 +1,6 @@
 import * as grpc from 'grpc';
 import {sendUnaryData, ServerUnaryCall} from 'grpc';
-import * as health from 'grpc-health-check/health';
+import {GrpcHealthCheck, HealthCheckResponse, HealthService} from 'grpc-ts-health-check';
 import * as net from 'net';
 
 import {Data} from '../../generated/datapb/data_pb';
@@ -10,23 +10,22 @@ import {Deserializer} from '../pcore/Deserializer';
 import {StreamLogger} from '../pcore/Logger';
 import {consumePBData, ProtoConsumer} from '../pcore/ProtoConsumer';
 import {Serializer} from '../pcore/Serializer';
-import {Type} from '../pcore/Type';
-import {Namespace, TypedName} from '../pcore/TypedName';
-import {Value} from '../pcore/Util';
+import {TypedName} from '../pcore/TypedName';
+import {StringHash, Value} from '../pcore/Util';
 import {DefinitionServiceService} from '../servicepb/service_grpc_pb';
 import {EmptyRequest, InvokeRequest, MetadataResponse, StateRequest} from '../servicepb/service_pb';
 
-import {ManifestLoader} from './ManifestLoader';
-import {Definition} from './ServiceBuilder';
+import {Definition, ServiceBuilder, StateProducer} from './ServiceBuilder';
 
 export class Service {
   readonly serviceId: TypedName;
-  readonly callables: {[s: string]: object};
+  readonly callables: {[s: string]: {[s: string]: Function}} = {};
   private readonly server: grpc.Server;
   private readonly startPort: number;
   private readonly endPort: number;
   private readonly context: Context;
   private readonly definitions: Definition[];
+  private readonly stateProducers: {[s: string]: StateProducer};
 
   private static getAvailablePort(start: number, end: number): Promise<number> {
     function getNextAvailablePort(
@@ -59,25 +58,30 @@ export class Service {
     return consumer.value();
   }
 
-  private static fromData(ctx: Context, value: Data): Value {
+  private static fromData(ctx: Context, value: Data|undefined): Value {
+    if (value === undefined) {
+      return null;
+    }
     const consumer = new Deserializer(ctx, {});
     consumePBData(value, consumer);
     return consumer.value();
   }
 
-  constructor(nsBase: {}, serviceId: TypedName, startPort: number, endPort: number) {
+  constructor(nsBase: Value, sb: ServiceBuilder, startPort: number, endPort: number) {
     this.server = new grpc.Server();
-    this.serviceId = serviceId;
+    this.serviceId = sb.serviceId;
     this.startPort = startPort;
     this.endPort = endPort;
     this.context = new Context(nsBase, new StreamLogger(process.stderr));
+    const cbs: {[s: string]: {[s: string]: Function}} = {};
+    for (const [k, v] of Object.entries(sb.actionFunctions)) {
+      cbs[k] = {do: v};
+    }
+    this.callables = cbs;
+    this.definitions = sb.definitions;
+    this.stateProducers = sb.stateProducers;
 
-    this.callables = {'JS::ManifestLoader': new ManifestLoader(this)};
-    this.definitions = [new Definition(
-        this.serviceId, new TypedName(Namespace.NsDefinition, 'JS::ManifestLoader'),
-        {interface: new Type('Service::Service'), style: 'callable'})];
-
-    this.server.addService(health.service, new health.Implementation({plugin: 'SERVING'}));
+    this.registerHealthCheck();
 
     this.server.addService(DefinitionServiceService, {
       identity: (call: ServerUnaryCall<EmptyRequest>, callback: sendUnaryData<Data>) =>
@@ -90,27 +94,69 @@ export class Service {
           ra = toData(null);
         }
         const args = (Service.fromData(this.context, ra) as Value[]);
-        const c = this.callables[rq.getIdentifier()];
-        if (c === undefined) {
-          throw new Error(`Unable to find implementation of ${rq.getIdentifier()}`);
-        }
-        const m = c[rq.getMethod()];
-        if (m === undefined) {
-          throw new Error(`Implementation of ${rq.getIdentifier()} has no method named ${rq.getMethod()}`);
-        }
-        callback(null, Service.toData(this.context, m(...args)));
+        const result = this.invoke(rq.getIdentifier(), rq.getMethod(), args);
+        callback(null, Service.toData(this.context, result));
       },
 
       metadata: (call: ServerUnaryCall<EmptyRequest>, callback: sendUnaryData<MetadataResponse>) => {
+        const md = this.metadata();
         const mdr = new MetadataResponse();
-        mdr.setDefinitions(Service.toData(this.context, this.definitions));
+        mdr.setTypeset(Service.toData(this.context, md[0]));
+        mdr.setDefinitions(Service.toData(this.context, md[1]));
         callback(null, mdr);
       },
 
-      state: (call: ServerUnaryCall<StateRequest>) => {
-        throw new Error(`Request for unknown state ${call.request.getIdentifier()}`);
+      state: (call: ServerUnaryCall<StateRequest>, callback: sendUnaryData<Data>) => {
+        const name = call.request.getIdentifier();
+        let input = Service.fromData(this.context, call.request.getInput()) as StringHash;
+        if (input === null) {
+          input = {};
+        }
+        callback(null, Service.toData(this.context, this.state(name, input)));
       }
     });
+  }
+
+  invoke(identifier: string, name: string, args: Value[]): Value {
+    const c = this.callables[identifier];
+    if (c === undefined) {
+      throw new Error(`Unable to find implementation of ${identifier}`);
+    }
+    const m = c[name];
+    if (m === undefined) {
+      throw new Error(`Implementation of ${identifier} has no method named ${name}`);
+    }
+    return m(...args);
+  }
+
+  metadata(): [null, Definition[]] {
+    return [null, this.definitions];
+  }
+
+  state(name: string, input: StringHash): Value {
+    const f = this.stateProducers[name];
+    if (f === undefined) {
+      throw new Error(`unable to find state producer for ${name}`);
+    }
+
+    const pns = Service.parameterNames(f);
+    const args = new Array<Value>();
+    if (input === null) {
+      if (pns.length > 0) {
+        throw Error(`state ${name} cannot be produced. Missing input parameter ${pns[0]}`);
+      }
+    } else {
+      const ih = input as StringHash;
+      for (let i = 0; i < pns.length; i++) {
+        const pn = pns[i];
+        const v = ih[pn];
+        if (v === undefined) {
+          throw Error(`state ${name} cannot be produced. Missing input parameter ${pn}`);
+        }
+        args.push(v);
+      }
+    }
+    return f(...args);
   }
 
   start() {
@@ -124,5 +170,23 @@ export class Service {
       process.stderr.write(`using address ${addr}\n`);
       this.server.start();
     });
+  }
+
+  private registerHealthCheck(): void {
+    const serviceName = 'auth.Authenticator';
+    const healthCheckStatusMap = {serviceName: HealthCheckResponse.ServingStatus.UNKNOWN};
+
+    // Register the health service
+    const grpcHealthCheck = new GrpcHealthCheck(healthCheckStatusMap);
+    grpcHealthCheck.setStatus(serviceName, HealthCheckResponse.ServingStatus.SERVING);
+
+    this.server.addService(HealthService, grpcHealthCheck);
+  }
+
+  private static paramNamePattern = new RegExp('^(?:function(?:\\s+\\w+)?\\s*)?\\(([^)]*)\\)', 'm');
+
+  private static parameterNames(s: StateProducer): string[] {
+    // @ts-ignore
+    return s.toString().match(Service.paramNamePattern)[1].split(',').map(v => v.trim());
   }
 }

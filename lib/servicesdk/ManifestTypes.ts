@@ -1,4 +1,15 @@
+import * as fs from 'fs';
+import {readFileSync} from 'fs';
+import * as sr from 'source-map-resolve';
 import * as ts from 'typescript';
+import {isIdentifier, isPropertyName, isStringLiteral, PropertyAccessExpression} from 'typescript';
+import {PropertyAssignment} from 'typescript';
+import {ShorthandPropertyAssignment} from 'typescript';
+import {SpreadAssignment} from 'typescript';
+import {MethodDeclaration} from 'typescript';
+import {AccessorDeclaration} from 'typescript';
+import * as url from 'url';
+
 import {NotNull, StringHash} from '../pcore/Util';
 
 const defaultCompilerOptions: ts.CompilerOptions = {
@@ -16,13 +27,25 @@ export class TranspiledResult {
   }
 }
 
+export function extractTypeInfoByPath(fileName: string, topName: string): StringHash|null {
+  const src = readFileSync(fileName, {encoding: 'UTF-8'});
+  if (src === null) {
+    throw new Error('unable to read file \'${fileName}\'');
+  }
+  const sm = sr.resolveSourceMapSync(src, fileName, fs.readFileSync);
+  return sm === null ?
+      null :
+      extractTypeInfo(fileName, topName, [url.resolve(sm.sourcesRelativeTo, sm.map.sources[0])]).inferredTypes;
+}
+
 /**
  * extractTypeInfo transpiles a manifest in order to extract type information of
  * input arguments and actions and resources.
  * @param sources
  * @param options
  */
-export function extractTypeInfo(sources: string[], options: ts.CompilerOptions = {}): TranspiledResult {
+export function extractTypeInfo(
+    fileName: string, topName: string, sources: string[], options: ts.CompilerOptions = {}): TranspiledResult {
   for (const [k, v] of Object.entries(defaultCompilerOptions)) {
     if (options[k] === undefined) {
       options[k] = v;
@@ -30,8 +53,8 @@ export function extractTypeInfo(sources: string[], options: ts.CompilerOptions =
   }
   const program = ts.createProgram(sources, options);
   const checker = program.getTypeChecker();
-  const collector = {};
-  const path = new Array<string>();
+  const collector: StringHash = {};
+  const path = [topName];
 
   const collect = (name: string, value: NotNull) => {
     let leaf = collector;
@@ -41,32 +64,14 @@ export function extractTypeInfo(sources: string[], options: ts.CompilerOptions =
         b = {};
         leaf[p] = b;
       }
-      leaf = b;
+      leaf = b as StringHash;
     });
     leaf[name] = value;
   };
 
-  const expectKind = <T extends ts.Node>(n: ts.Node, okFunc: (n: ts.Node) => n is T, expected: string): T => {
-    if (!okFunc(n)) {
-      throw new Error(`expected node of ${expected} type. Got kind: ${n.kind}`);
-    }
-    return n;
-  };
-
-  const expectHash = (na: ts.NodeArray<ts.Expression>): ts.ObjectLiteralExpression => {
-    if (na.length === 1) {
-      return expectKind(na[0], ts.isObjectLiteralExpression, 'object literal');
-    }
-    throw new Error(`expected exactly one parameter of type object literal`);
-  };
-
-  const traverseProperties = (o: ts.ObjectLiteralExpression, tf: (pa: ts.PropertyAssignment) => void) => {
-    o.properties.forEach((p) => tf(expectKind(p, ts.isPropertyAssignment, 'property assignment')));
-  };
-
   const traverseActionReturn = (o: ts.Node) => {
     const ht = expectKind(o, ts.isTypeLiteralNode, 'literal hash type');
-    const params = {};
+    const params: {[s: string]: string} = {};
     for (const m of ht.members) {
       if (ts.isPropertySignature(m)) {
         params[m.name.getText()] = m.type === undefined ? 'any' : m.type.getText();
@@ -114,7 +119,7 @@ export function extractTypeInfo(sources: string[], options: ts.CompilerOptions =
 
       // Extract the parameter types. Those are the types for the resource input
       // variables
-      const params = {};
+      const params: {[s: string]: string} = {};
       f.parameters.forEach((p) => {
         params[p.name.getText()] = p.type === undefined ? 'any' : p.type.getText();
       });
@@ -139,7 +144,7 @@ export function extractTypeInfo(sources: string[], options: ts.CompilerOptions =
 
       // Extract the parameter types. Those are the types for the resource input
       // variables
-      const params = {};
+      const params: {[s: string]: string} = {};
       f.parameters.forEach((p) => {
         params[p.name.getText()] = p.type === undefined ? 'any' : p.type.getText();
       });
@@ -186,24 +191,18 @@ export function extractTypeInfo(sources: string[], options: ts.CompilerOptions =
   const traverseResource = (o: ts.ObjectLiteralExpression) => traverseProperties(o, traverseResourceProperty);
 
   const traverse = (o: ts.Node) => {
-    switch (o.kind) {
-      case ts.SyntaxKind.CallExpression:
-        const f = (o as ts.CallExpression);
-        const c = f.expression;
-        if (ts.isIdentifier(c)) {
-          const key = (c as ts.Identifier).text;
-          switch (key) {
-            case 'resource':
-              traverseResource(expectHash(f.arguments));
-              return;
-            case 'action':
-              traverseAction(expectHash(f.arguments));
-              return;
-            case 'workflow':
-              traverseWorkflow(expectHash(f.arguments));
-              return;
-          }
-        }
+    if (ts.isObjectLiteralExpression(o) && hasSourceEntry(o)) {
+      switch (getActivityStyle(o)) {
+        case 'resource':
+          traverseResource(o);
+          return;
+        case 'action':
+          traverseAction(o);
+          return;
+        case 'workflow':
+          traverseWorkflow(o);
+          return;
+      }
     }
     ts.forEachChild(o, traverse);
   };
@@ -216,4 +215,48 @@ export function extractTypeInfo(sources: string[], options: ts.CompilerOptions =
   }
 
   return new TranspiledResult(program, collector);
+}
+
+function expectKind<T extends ts.Node>(n: ts.Node, okFunc: (n: ts.Node) => n is T, expected: string): T {
+  if (!okFunc(n)) {
+    throw new Error(`expected node of ${expected} type. Got kind: ${n.kind}`);
+  }
+  return n;
+}
+
+function expectHash(na: ReadonlyArray<ts.Expression>): ts.ObjectLiteralExpression {
+  if (na.length === 1) {
+    return expectKind(na[0], ts.isObjectLiteralExpression, 'object literal');
+  }
+  throw new Error(`expected exactly one parameter of type object literal`);
+}
+
+function traverseProperties(o: ts.ObjectLiteralExpression, tf: (pa: ts.PropertyAssignment) => void) {
+  o.properties.forEach((p) => tf(expectKind(p, ts.isPropertyAssignment, 'property assignment')));
+}
+
+function hasSourceEntry(ol: ts.ObjectLiteralExpression): boolean {
+  for (const p of ol.properties) {
+    if (p.name !== undefined && (isIdentifier(p.name) || isStringLiteral(p.name)) && p.name.text === 'source' &&
+        ts.isPropertyAssignment(p) && isIdentifier(p.initializer) && p.initializer.text === '__filename') {
+      return true;
+    }
+  }
+  return false;
+}
+
+function getActivityStyle(ol: ts.ObjectLiteralExpression): 'workflow'|'resource'|'action'|null {
+  for (const p of ol.properties) {
+    if (p.name !== undefined && (isIdentifier(p.name) || isStringLiteral(p.name))) {
+      switch (p.name.text) {
+        case 'activities':
+          return 'workflow';
+        case 'state':
+          return 'resource';
+        case 'do':
+          return 'action';
+      }
+    }
+  }
+  return null;
 }
