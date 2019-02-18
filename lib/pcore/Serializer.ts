@@ -1,5 +1,6 @@
 import {Context} from './Context';
 import {Sensitive} from './Sensitive';
+import {initializerFor} from './Type';
 import {isHash, isStringMap, NotNull, strictString, StringHash, Value} from './Util';
 
 export const PTYPE_KEY = '__ptype';
@@ -240,7 +241,7 @@ class SerializerContext {
     }
 
     this.process(value, () => {
-      const pv = isPcoreValue(value) ? value.__pvalue() : SerializerContext.initializerFor(value);
+      const pv = isPcoreValue(value) ? value.__pvalue() : initializerFor(value);
       if (isHash(pv)) {
         const es = Object.entries(pv);
         this.addHash(es.length + 1, () => {
@@ -323,19 +324,5 @@ class SerializerContext {
     this.path.push(value);
     doer();
     this.path.pop();
-  }
-
-  private static initializerFor(value: object): StringHash {
-    const init: StringHash = {};
-    const h = value as StringHash;
-    for (const key in h) {
-      if (h.hasOwnProperty(key)) {
-        const prop = h[key];
-        if (typeof prop !== 'function') {
-          init[key] = prop;
-        }
-      }
-    }
-    return init;
   }
 }

@@ -26,8 +26,8 @@
     "clean": "gts clean",
     "compile": "tsc -p .",
     "fix": "gts fix",
-    "prepare": "npm run compile",
-    "pretest": "npm run compile",
+    "prepare": "npm run compile && scripts/copy_generated.sh",
+    "pretest": "npm run compile && scripts/copy_generated.sh",
     "posttest": "npm run check",
     "protogen": "scripts/gen_js.sh"
   },

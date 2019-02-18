@@ -5,9 +5,9 @@ import {Data} from '../pcore/Data';
 import {Deferred} from '../pcore/Deferred';
 import {Parameter} from '../pcore/Parameter';
 import {PcoreObject} from '../pcore/Serializer';
-import {anyType, Type} from '../pcore/Type';
+import {anyType, initializerFor, Type} from '../pcore/Type';
 import {Namespace, TypedName} from '../pcore/TypedName';
-import {isHash, StringHash, Value} from '../pcore/Util';
+import {indent, isHash, StringHash, Value} from '../pcore/Util';
 
 import {extractTypeInfoByPath} from './ManifestTypes';
 import {Service} from './Service';
@@ -135,8 +135,8 @@ export class Definition implements PcoreObject {
     this.properties = properties;
   }
 
-  toString(): string {
-    return util.formatWithOptions({depth: 10}, '%O', this);
+  [util.inspect.custom](depth: number, options: util.InspectOptions): string {
+    return `Definition  + ${util.inspect(initializerFor(this), options)}`;
   }
 
   __ptype(): string {

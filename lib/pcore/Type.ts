@@ -2,6 +2,7 @@ import * as util from 'util';
 
 import {PcoreValue} from './Serializer';
 import {toPcoreType} from './TypeTransformer';
+import {StringHash} from './Util';
 
 export class Type implements PcoreValue {
   readonly typeString: string;
@@ -24,3 +25,17 @@ export class Type implements PcoreValue {
 }
 
 export const anyType = new Type('Any');
+
+export function initializerFor(value: object): StringHash {
+  const init: StringHash = {};
+  const h = value as StringHash;
+  for (const key in h) {
+    if (h.hasOwnProperty(key)) {
+      const prop = h[key];
+      if (typeof prop !== 'function') {
+        init[key] = prop;
+      }
+    }
+  }
+  return init;
+}
