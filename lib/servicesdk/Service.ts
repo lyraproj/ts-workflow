@@ -3,7 +3,7 @@ import {sendUnaryData, ServerUnaryCall} from 'grpc';
 import {GrpcHealthCheck, HealthCheckResponse, HealthService} from 'grpc-ts-health-check';
 import * as net from 'net';
 
-import {Data} from '../../generated/datapb/data_pb';
+import {Data} from '../datapb/data_pb';
 import {toData} from '../datapb/reflect';
 import {Context} from '../pcore/Context';
 import {Deserializer} from '../pcore/Deserializer';

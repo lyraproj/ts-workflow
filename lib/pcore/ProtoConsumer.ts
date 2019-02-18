@@ -1,6 +1,6 @@
 import {types} from 'util';
 
-import {Data, DataArray, DataEntry, DataHash, NullValue} from '../../generated/datapb/data_pb';
+import {Data, DataArray, DataEntry, DataHash, NullValue} from '../datapb/data_pb';
 
 import {ValueConsumer} from './Serializer';
 
