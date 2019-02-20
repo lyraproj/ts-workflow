@@ -10,11 +10,11 @@ const wf = {
   source: __filename,
   input: {tags: {type: 'StringHash', lookup: 'aws.tags'}},
 
-  output: {vpcId: 'string', subnetId: 'string', routetableId: 'string'},
+  output: {vpcId: 'string', subnetId: 'string', routeTableId: 'string'},
 
   activities: {
     vpc: resource({
-      output: ['vpc_id', 'subnet_id'],
+      output: 'vpcId',
       state: (tags: {[s: string]: string}): Aws.Vpc => new Aws.Vpc({
         amazonProvidedIpv6CidrBlock: false,
         cidrBlock: '192.168.0.0/16',
@@ -34,7 +34,7 @@ const wf = {
     }),
 
     subnet: resource({
-      output: 'subnet_id',
+      output: 'subnetId',
       state: (vpcId: string, tags: {[s: string]: string}) => new Aws.Subnet({
         vpcId,
         tags,
@@ -47,8 +47,8 @@ const wf = {
       })
     }),
 
-    routetable: resource({
-      output: {routetable_id: 'string'},
+    routeTable: resource({
+      output: {routeTableId: 'string'},
       state: (vpcId: string, tags: {[s: string]: string}) => makeRouteTable(vpcId, tags)
     })
   }

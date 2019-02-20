@@ -7,7 +7,7 @@ import {Parameter} from '../pcore/Parameter';
 import {PcoreObject} from '../pcore/Serializer';
 import {anyType, initializerFor, Type} from '../pcore/Type';
 import {Namespace, TypedName} from '../pcore/TypedName';
-import {indent, isHash, StringHash, Value} from '../pcore/Util';
+import {isHash, StringHash, Value} from '../pcore/Util';
 
 import {extractTypeInfoByPath} from './ManifestTypes';
 import {Service} from './Service';
@@ -83,7 +83,7 @@ export function workflow(a: WorkflowMap): WorkflowMap {
 }
 
 export function activityName(fileName: string): string {
-  // TODO: Take file name relative to 'workflows' directory and create
+  // TODO: Take file name relative to 'workflow' directory and create
   //  a qualified name based on that
   return path.basename(fileName, '.js');
 }
@@ -99,8 +99,7 @@ export class ServiceBuilder {
   }
 
   build(nsBase: Value): Service {
-    const s = new Service(nsBase, this, 2000, 21000);
-    return s;
+    return new Service(nsBase, this, 2000, 21000);
   }
 
   workflow(wm: WorkflowMap&TopLevelActivityMap) {
@@ -120,7 +119,7 @@ export class ServiceBuilder {
     const an = activityName(source);
     const ab = new C(an);
     ab.fromMap(map);
-    this.definitions.push(ab.build(this, extractTypeInfoByPath(source, ab.getName())));
+    this.definitions.push(ab.build(this, extractTypeInfoByPath(source)));
   }
 }
 
@@ -278,10 +277,10 @@ export abstract class ActivityBuilder {
   protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
     const props: StringHash = {};
     if (this.in !== undefined) {
-      props['input'] = this.in;
+      props['input'] = Object.values(this.in);
     }
     if (this.out !== undefined) {
-      props['output'] = this.out;
+      props['output'] = Object.values(this.out);
     }
     if (this.guard !== undefined) {
       props['when'] = this.guard;
@@ -292,12 +291,12 @@ export abstract class ActivityBuilder {
 
 export class ResourceBuilder extends ActivityBuilder {
   private extId?: string;
-  private typ?: string;
+  private resourceType?: string;
   private stateProducer?: StateProducer;
 
   amendWithInferredTypes(inferred: StringHash) {
     super.amendWithInferredTypes(inferred);
-    if (this.typ === undefined) {
+    if (this.resourceType === undefined) {
       const it = inferred['type'];
       if (typeof it === 'string') {
         this.type(it);
@@ -314,7 +313,7 @@ export class ResourceBuilder extends ActivityBuilder {
   }
 
   type(t: string) {
-    this.typ = t;
+    this.resourceType = t;
   }
 
   build(sb: ServiceBuilder, inferred: StringHash|null): Definition {
@@ -340,9 +339,10 @@ export class ResourceBuilder extends ActivityBuilder {
     if (this.extId !== undefined) {
       props['external_id'] = this.extId;
     }
-    if (this.typ !== undefined) {
-      props['type'] = this.typ;
+    if (this.resourceType !== undefined) {
+      props['resourceType'] = new Type(this.resourceType);
     }
+    props['style'] = 'resource';
     return props;
   }
 }
@@ -360,6 +360,12 @@ export class ActionBuilder extends ActivityBuilder {
       sb.actionFunctions[this.getName()] = this.actionFunction;
     }
     return super.build(sb, inferred);
+  }
+
+  protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
+    const props = super.definitionProperties(sb, inferred);
+    props['style'] = 'stateless';
+    return props;
   }
 
   fromMap(m: ActionMap) {
@@ -427,6 +433,7 @@ export class WorkflowBuilder extends ActivityBuilder {
   protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
     const props = super.definitionProperties(sb, inferred);
     props['activities'] = this.activities.map(ab => ab.build(sb, inferred));
+    props['style'] = 'workflow';
     return props;
   }
 }

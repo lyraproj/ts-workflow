@@ -1,5 +1,6 @@
 import * as ts from 'typescript';
 
+const puppetTypeNamePattern = new RegExp(/^(?:[A-Z][0-9A-Za-z_]*)(?:::[A-Z][0-9A-Za-z_]*)*$/);
 /**
  * Transform the string representation of a TypeScript type definition into
  * a string representation of its corresponding Pcore type.
@@ -7,6 +8,13 @@ import * as ts from 'typescript';
  * @returns String representation of the resulting Puppet type.
  */
 export function toPcoreType(tsType: string): string {
+  const ttn = transformTypeName(tsType);
+  if (ttn !== tsType) {
+    return ttn;
+  }
+  if (puppetTypeNamePattern.test(tsType)) {
+    return tsType;
+  }
   return transformType(parseType(tsType));
 }
 
@@ -33,6 +41,8 @@ function transformTypeName(typeName: string): string {
       return 'Regexp';
     case 'Uint8Array':
       return 'Binary';
+    case 'URL':
+      return 'URI';
     default:
       return typeName;
   }

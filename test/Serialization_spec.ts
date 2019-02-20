@@ -1,12 +1,14 @@
 /// <reference types="jest" />
 import {PcoreObject, PcoreValue, Serializer} from "../lib/pcore/Serializer";
 import {Context} from "../lib/pcore/Context";
-import {ArrayLogger} from "../lib/pcore/Logger";
+import {ArrayLogger, setDefaultLogger} from "../lib/pcore/Logger";
 import {MemCollector} from "../lib/pcore/Collector";
 import {StringHash} from "../lib/pcore/Util";
 import {Namespace, TypedName} from "../lib/pcore/TypedName";
 import {Parameter} from "../lib/pcore/Parameter";
 import {Deferred} from "../lib/pcore/Deferred";
+
+setDefaultLogger(new ArrayLogger());
 
 export namespace My {
   export class Thing {
@@ -70,7 +72,7 @@ const glob = { My };
 describe('Serializer', () => {
   it('streams a regexp', () => {
     const obj = /foo.*bar/;
-    const ctx = new Context(glob, new ArrayLogger());
+    const ctx = new Context(glob);
     const collector = new MemCollector();
     const ser = new Serializer(ctx, {});
     ser.convert(obj, collector);
@@ -82,7 +84,7 @@ describe('Serializer', () => {
 
   it('streams a Timestamp', () => {
     const obj = new Date("2019-02-04T02:13:20.1234Z");
-    const ctx = new Context(glob, new ArrayLogger());
+    const ctx = new Context(glob);
     const collector = new MemCollector();
     const ser = new Serializer(ctx, {});
     ser.convert(obj, collector);
@@ -94,7 +96,7 @@ describe('Serializer', () => {
 
   it('streams a TypedName', () => {
     const obj = new TypedName(Namespace.NsService, 'a::service::name');
-    const ctx = new Context(glob, new ArrayLogger());
+    const ctx = new Context(glob);
     const collector = new MemCollector();
     const ser = new Serializer(ctx, {});
     ser.convert(obj, collector);
@@ -110,7 +112,7 @@ describe('Serializer', () => {
 
   it('streams a Parameter', () => {
     const obj = new Parameter('x', 'Date', new Deferred('lookup', 'some.stuff'));
-    const ctx = new Context(glob, new ArrayLogger());
+    const ctx = new Context(glob);
     const collector = new MemCollector();
     const ser = new Serializer(ctx, {});
     ser.convert(obj, collector);
@@ -134,7 +136,7 @@ describe('Serializer', () => {
 
   it('streams a data hash', () => {
     const obj = new My.Own.Thing('Hello world');
-    const ctx = new Context(glob, new ArrayLogger());
+    const ctx = new Context(glob);
     const collector = new MemCollector();
     const ser = new Serializer(ctx, {});
     ser.convert(obj, collector);
@@ -146,7 +148,7 @@ describe('Serializer', () => {
 
   it('streams a __ptype property', () => {
     const obj = new My.Own.Item({message: 'Hello world'});
-    const ctx = new Context(glob, new ArrayLogger());
+    const ctx = new Context(glob);
     const collector = new MemCollector();
     const ser = new Serializer(ctx, {});
     ser.convert(obj, collector);
@@ -158,7 +160,7 @@ describe('Serializer', () => {
 
   it('streams a __pvalue property', () => {
     const obj = new My.Stuff({x: 'Hello world'});
-    const ctx = new Context(glob, new ArrayLogger());
+    const ctx = new Context(glob);
     const collector = new MemCollector();
     const ser = new Serializer(ctx, {});
     ser.convert(obj, collector);

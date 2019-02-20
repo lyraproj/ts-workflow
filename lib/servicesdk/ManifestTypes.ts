@@ -2,12 +2,7 @@ import * as fs from 'fs';
 import {readFileSync} from 'fs';
 import * as sr from 'source-map-resolve';
 import * as ts from 'typescript';
-import {isIdentifier, isPropertyName, isStringLiteral, PropertyAccessExpression} from 'typescript';
-import {PropertyAssignment} from 'typescript';
-import {ShorthandPropertyAssignment} from 'typescript';
-import {SpreadAssignment} from 'typescript';
-import {MethodDeclaration} from 'typescript';
-import {AccessorDeclaration} from 'typescript';
+import {isIdentifier, isStringLiteral} from 'typescript';
 import * as url from 'url';
 
 import {NotNull, StringHash} from '../pcore/Util';
@@ -27,25 +22,25 @@ export class TranspiledResult {
   }
 }
 
-export function extractTypeInfoByPath(fileName: string, topName: string): StringHash|null {
+export function extractTypeInfoByPath(fileName: string): StringHash|null {
   const src = readFileSync(fileName, {encoding: 'UTF-8'});
   if (src === null) {
     throw new Error('unable to read file \'${fileName}\'');
   }
   const sm = sr.resolveSourceMapSync(src, fileName, fs.readFileSync);
-  return sm === null ?
-      null :
-      extractTypeInfo(fileName, topName, [url.resolve(sm.sourcesRelativeTo, sm.map.sources[0])]).inferredTypes;
+  return sm === null ? null :
+                       extractTypeInfo(fileName, [url.resolve(sm.sourcesRelativeTo, sm.map.sources[0])]).inferredTypes;
 }
 
 /**
  * extractTypeInfo transpiles a manifest in order to extract type information of
  * input arguments and actions and resources.
+ * @param fileName
  * @param sources
  * @param options
  */
 export function extractTypeInfo(
-    fileName: string, topName: string, sources: string[], options: ts.CompilerOptions = {}): TranspiledResult {
+    fileName: string, sources: string[], options: ts.CompilerOptions = {}): TranspiledResult {
   for (const [k, v] of Object.entries(defaultCompilerOptions)) {
     if (options[k] === undefined) {
       options[k] = v;
@@ -54,7 +49,7 @@ export function extractTypeInfo(
   const program = ts.createProgram(sources, options);
   const checker = program.getTypeChecker();
   const collector: StringHash = {};
-  const path = [topName];
+  const path: string[] = [];
 
   const collect = (name: string, value: NotNull) => {
     let leaf = collector;

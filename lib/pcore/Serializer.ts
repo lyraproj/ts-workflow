@@ -1,4 +1,5 @@
 import {Context} from './Context';
+import {logger} from './Logger';
 import {Sensitive} from './Sensitive';
 import {initializerFor} from './Type';
 import {isHash, isStringMap, NotNull, strictString, StringHash, Value} from './Util';
@@ -315,7 +316,7 @@ class SerializerContext {
     if (ts === 'object') {
       ts = value.constructor.name;
     }
-    this.config.context.logger.warning(
+    logger.warning(
         '%s contains a value of type %s. It will be converted to the string \'%s\'', this.pathToString(), ts, s);
     this.addString(level, s);
   }

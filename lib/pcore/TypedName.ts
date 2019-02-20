@@ -1,7 +1,7 @@
 import * as util from 'util';
 
 import {PcoreValue} from './Serializer';
-import {indent, StringHash} from './Util';
+import {StringHash} from './Util';
 
 export enum Namespace {
   NsType = 'type',

@@ -1,4 +1,3 @@
-import * as util from 'util';
 export interface ValueArray extends Array<Value> {}
 export interface ValueMap extends Map<Value, Value> {}
 export interface StringMap extends Map<string, Value> {}
@@ -85,16 +84,4 @@ export function makeBoolean(arg: NotNull): boolean {
 
 export function makeString(arg: Value): string|undefined {
   return arg === null ? undefined : arg.toString();
-}
-
-export function indent(options: util.InspectOptions, depth: number): string {
-  let s = '';
-  if (options.compact || options.depth && options.depth < depth) {
-    return s;
-  }
-  s += '\n';
-  for (let i = 0; i < depth; i++) {
-    s += '  ';
-  }
-  return s;
 }

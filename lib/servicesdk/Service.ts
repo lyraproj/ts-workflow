@@ -7,11 +7,10 @@ import {Data} from '../datapb/data_pb';
 import {toData} from '../datapb/reflect';
 import {Context} from '../pcore/Context';
 import {Deserializer} from '../pcore/Deserializer';
-import {StreamLogger} from '../pcore/Logger';
 import {consumePBData, ProtoConsumer} from '../pcore/ProtoConsumer';
 import {Serializer} from '../pcore/Serializer';
 import {TypedName} from '../pcore/TypedName';
-import {StringHash, Value} from '../pcore/Util';
+import {StringMap, Value} from '../pcore/Util';
 import {DefinitionServiceService} from '../servicepb/service_grpc_pb';
 import {EmptyRequest, InvokeRequest, MetadataResponse, StateRequest} from '../servicepb/service_pb';
 
@@ -72,7 +71,7 @@ export class Service {
     this.serviceId = sb.serviceId;
     this.startPort = startPort;
     this.endPort = endPort;
-    this.context = new Context(nsBase, new StreamLogger(process.stderr));
+    this.context = new Context(nsBase);
     const cbs: {[s: string]: {[s: string]: Function}} = {};
     for (const [k, v] of Object.entries(sb.actionFunctions)) {
       cbs[k] = {do: v};
@@ -101,17 +100,16 @@ export class Service {
       metadata: (call: ServerUnaryCall<EmptyRequest>, callback: sendUnaryData<MetadataResponse>) => {
         const md = this.metadata();
         const mdr = new MetadataResponse();
-        mdr.setTypeset(Service.toData(this.context, md[0]));
+        if (md[0] != null) {
+          mdr.setTypeset(Service.toData(this.context, md[0]));
+        }
         mdr.setDefinitions(Service.toData(this.context, md[1]));
         callback(null, mdr);
       },
 
       state: (call: ServerUnaryCall<StateRequest>, callback: sendUnaryData<Data>) => {
         const name = call.request.getIdentifier();
-        let input = Service.fromData(this.context, call.request.getInput()) as StringHash;
-        if (input === null) {
-          input = {};
-        }
+        const input = Service.fromData(this.context, call.request.getInput()) as StringMap;
         callback(null, Service.toData(this.context, this.state(name, input)));
       }
     });
@@ -133,7 +131,7 @@ export class Service {
     return [null, this.definitions];
   }
 
-  state(name: string, input: StringHash): Value {
+  state(name: string, input: StringMap|null): Value {
     const f = this.stateProducers[name];
     if (f === undefined) {
       throw new Error(`unable to find state producer for ${name}`);
@@ -146,10 +144,9 @@ export class Service {
         throw Error(`state ${name} cannot be produced. Missing input parameter ${pns[0]}`);
       }
     } else {
-      const ih = input as StringHash;
       for (let i = 0; i < pns.length; i++) {
         const pn = pns[i];
-        const v = ih[pn];
+        const v = input.get(pn);
         if (v === undefined) {
           throw Error(`state ${name} cannot be produced. Missing input parameter ${pn}`);
         }
@@ -166,8 +163,6 @@ export class Service {
 
       // go-plugin awaits this reply on stdout
       console.log(`1|1|tcp|${addr}|grpc`);
-
-      process.stderr.write(`using address ${addr}\n`);
       this.server.start();
     });
   }

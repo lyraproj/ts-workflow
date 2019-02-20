@@ -1,7 +1,6 @@
-import {Logger} from './Logger';
 import {isHash, makeBoolean, makeFloat, makeInt, makeString, StringHash, Value} from './Util';
 
-const wellknownTypes: {[s: string]: Function} = {
+const wellKnownTypes: {[s: string]: Function} = {
   Boolean: makeBoolean,
   Integer: makeInt,
   Float: makeFloat,
@@ -48,13 +47,11 @@ export class TypeNames {
 
 export class Context {
   private readonly nsBase: Value;
-  readonly logger: Logger;
   readonly typeNames: TypeNames;
 
-  constructor(nsBase: Value, logger: Logger) {
+  constructor(nsBase: Value) {
     this.nsBase = nsBase;
     this.typeNames = new TypeNames(nsBase);
-    this.logger = logger;
   }
 
   /**
@@ -67,7 +64,7 @@ export class Context {
     const parts = typeString.split('::');
     if (parts.length === 1) {
       // Check if well known type
-      const t = wellknownTypes[parts[0]];
+      const t = wellKnownTypes[parts[0]];
       if (t !== undefined) {
         return t;
       }

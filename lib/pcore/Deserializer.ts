@@ -31,6 +31,10 @@ export class Deserializer extends MemCollector {
       return v;
     }
 
+    if (Array.isArray(value)) {
+      return this.convertArray(value);
+    }
+
     if (isStringMap(value)) {
       const pcoreType = value.get(PTYPE_KEY);
       if (pcoreType !== undefined) {
@@ -43,9 +47,31 @@ export class Deserializer extends MemCollector {
             return DEFAULT;
         }
         return this.convertOther(value, pcoreType);
+      } else {
+        return this.convertStringHash(value);
       }
     }
-    return null;
+
+    this.converted.set(value, value);
+    return value;
+  }
+
+  private convertArray(a: Data[]): Value {
+    const result = new Array<Value>();
+    this.converted.set(a, result);
+    for (const e of a) {
+      result.push(this.convert(e));
+    }
+    return result;
+  }
+
+  private convertStringHash(hash: Map<string, Data>): Map<Value, Value> {
+    const result = new Map<string, Value>();
+    this.converted.set(hash, result);
+    for (const [k, v] of hash.entries()) {
+      result.set(k, this.convert(v));
+    }
+    return result;
   }
 
   private convertHash(hash: Map<string, Data>): Map<Value, Value> {

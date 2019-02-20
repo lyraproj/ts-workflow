@@ -1,6 +1,6 @@
-import {vsprintf} from 'sprintf-js';
+import * as util from 'util';
 
-import {Value} from './Util';
+import {StringHash, Value} from './Util';
 
 export enum LogLevel {
   Debug = 'DEBUG',
@@ -18,21 +18,38 @@ export interface Logger {
 
 export class LogEntry {
   readonly level: LogLevel;
-  readonly format: string;
+  readonly message: string;
+  readonly timestamp: number;
   readonly args: Value[];
 
-  constructor(level: LogLevel, format: string, args: Value[]) {
+  constructor(level: LogLevel, message: string, args: Value[]) {
     this.level = level;
-    this.format = format;
+    this.message = message;
+    this.timestamp = Date.now();
     this.args = args;
   }
 
+  formatArgs(): string {
+    let s = '';
+    const top = this.args.length;
+    if (top > 0) {
+      s += ': ';
+      for (let i = 0; i + 1 < top; i += 2) {
+        s += ' ';
+        s += this.args[i];
+        s += '=';
+        s += util.inspect(this.args[i + 1]);
+      }
+    }
+    return s;
+  }
+
   toString() {
-    return `${this.level}: ${vsprintf(this.format, this.args)}`;
+    return `[${this.level}] ${this.message}${this.formatArgs()}`;
   }
 
   toStringNL() {
-    return `${this.level}: ${vsprintf(this.format, this.args)}\n`;
+    return `[${this.level}] ${this.message}${this.formatArgs()}\n`;
   }
 }
 
@@ -87,4 +104,34 @@ export class StreamLogger extends AbstractLogger {
   protected log(entry: LogEntry) {
     this.stream.write(entry.toStringNL());
   }
+}
+
+/**
+ * Writes HCLog style JSON entries on stderr
+ */
+export class PluginLogger extends AbstractLogger {
+  private readonly stream: NodeJS.WritableStream;
+
+  constructor(stream: NodeJS.WritableStream = process.stderr) {
+    super();
+    this.stream = stream;
+  }
+
+  protected log(entry: LogEntry) {
+    let ts = new Date(entry.timestamp).toISOString();
+    ts = ts.substring(0, ts.length - 1) + '000+00:00';
+    const hcEntry: StringHash = {'@message': entry.message, '@level': entry.level.valueOf(), '@timestamp': ts};
+    const args = entry.args;
+    const top = args.length;
+    for (let i = 0; i + 1 < top; i += 2) {
+      hcEntry[args[i] as string] = args[i + 1];
+    }
+    this.stream.write(JSON.stringify(hcEntry) + '\n');
+  }
+}
+
+export let logger: AbstractLogger = new PluginLogger();
+
+export function setDefaultLogger(dl: AbstractLogger) {
+  logger = dl;
 }
