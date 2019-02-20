@@ -364,7 +364,7 @@ export class ActionBuilder extends ActivityBuilder {
 
   protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
     const props = super.definitionProperties(sb, inferred);
-    props['style'] = 'stateless';
+    props['style'] = 'action';
     return props;
   }
 
