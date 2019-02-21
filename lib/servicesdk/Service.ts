@@ -74,7 +74,12 @@ export class Service {
     this.context = new Context(nsBase);
     const cbs: {[s: string]: {[s: string]: Function}} = {};
     for (const [k, v] of Object.entries(sb.actionFunctions)) {
-      cbs[k] = {do: v};
+      cbs[k] = {
+        do: (...args: Value[]): Value => {
+          const input = args[0] as StringMap;
+          return Service.callWithNamedArgs(v, input);
+        }
+      };
     }
     this.callables = cbs;
     this.definitions = sb.definitions;
@@ -136,24 +141,7 @@ export class Service {
     if (f === undefined) {
       throw new Error(`unable to find state producer for ${name}`);
     }
-
-    const pns = Service.parameterNames(f);
-    const args = new Array<Value>();
-    if (input === null) {
-      if (pns.length > 0) {
-        throw Error(`state ${name} cannot be produced. Missing input parameter ${pns[0]}`);
-      }
-    } else {
-      for (let i = 0; i < pns.length; i++) {
-        const pn = pns[i];
-        const v = input.get(pn);
-        if (v === undefined) {
-          throw Error(`state ${name} cannot be produced. Missing input parameter ${pn}`);
-        }
-        args.push(v);
-      }
-    }
-    return f(...args);
+    return Service.callWithNamedArgs(f, input);
   }
 
   start() {
@@ -178,10 +166,30 @@ export class Service {
     this.server.addService(HealthService, grpcHealthCheck);
   }
 
+  private static callWithNamedArgs(f: Function, input: StringMap|null): Value {
+    const pns = Service.parameterNames(f);
+    const args = new Array<Value>();
+    if (input === null) {
+      if (pns.length > 0) {
+        throw Error(`state ${name} cannot be produced. Missing input parameter ${pns[0]}`);
+      }
+    } else {
+      for (let i = 0; i < pns.length; i++) {
+        const pn = pns[i];
+        const v = input.get(pn);
+        if (v === undefined) {
+          throw Error(`state ${name} cannot be produced. Missing input parameter ${pn}`);
+        }
+        args.push(v);
+      }
+    }
+    return f(...args);
+  }
+
   private static paramNamePattern = new RegExp('^(?:function(?:\\s+\\w+)?\\s*)?\\(([^)]*)\\)', 'm');
 
-  private static parameterNames(s: StateProducer): string[] {
+  private static parameterNames(f: Function): string[] {
     // @ts-ignore
-    return s.toString().match(Service.paramNamePattern)[1].split(',').map(v => v.trim());
+    return f.toString().match(Service.paramNamePattern)[1].split(',').map(v => v.trim());
   }
 }
