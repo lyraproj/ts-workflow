@@ -1,6 +1,6 @@
 {
   "name": "lyra-workflow",
-  "version": "0.1.2-beta.3",
+  "version": "0.1.2-beta.4",
   "description": "Lyra Workflow Back-end for TypeScript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
