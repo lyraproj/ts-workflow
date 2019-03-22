@@ -171,14 +171,14 @@ export class Service {
     const args = new Array<Value>();
     if (input === null) {
       if (pns.length > 0) {
-        throw Error(`state ${name} cannot be produced. Missing input parameter ${pns[0]}`);
+        throw Error(`state cannot be produced. Missing input parameter ${pns[0]}`);
       }
     } else {
       for (let i = 0; i < pns.length; i++) {
         const pn = pns[i];
         const v = input.get(pn);
         if (v === undefined) {
-          throw Error(`state ${name} cannot be produced. Missing input parameter ${pn}`);
+          throw Error(`state cannot be produced. Missing input parameter ${pn}`);
         }
         args.push(v);
       }
