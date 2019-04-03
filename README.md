@@ -43,8 +43,13 @@ npm test
 Or
 
 ```sh
-
 ./node_modules/pre-commit/hook
+```
+
+This also runs `gts check`.  To fix any linting errors automatically, you can run 
+
+```sh
+npm run fix
 ```
 
 ## Deploying 
