@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as util from 'util';
 
 import {logger} from '..';
-import {Data} from '../pcore/Data';
+import {Data, DataArray, StringDataMap} from '../pcore/Data';
 import {Deferred} from '../pcore/Deferred';
 import {Parameter} from '../pcore/Parameter';
 import {PcoreObject} from '../pcore/Serializer';
@@ -28,12 +28,43 @@ export type OutParam = {
   alias?: string
 };
 
+export interface Iteration {
+  variable?: string;
+}
+
+export interface Times extends Iteration {
+  times: InParam|number;
+}
+
+function isTimes(value: Iteration): value is Times {
+  return (value as Times).times !== undefined;
+}
+
+export interface Range extends Iteration {
+  from: InParam|number;
+  to: InParam|number;
+}
+
+function isRange(value: Iteration): value is Range {
+  return (value as Range).to !== undefined;
+}
+
+export interface Each extends Iteration {
+  each: InParam|DataArray|StringDataMap;
+  variables?: string[];
+}
+
+function isEach(value: Iteration): value is Each {
+  return (value as Each).each !== undefined;
+}
+
 /**
  * The ActivityMap contains the properties common to all Activities
  */
 export interface ActivityMap {
   name?: string;
   style?: 'action'|'resource'|'workflow';
+  iteration?: Each|Range|Times;
   input?: string|string[]|{[s: string]: string | InParam};
   output?: string|string[]|{[s: string]: string | OutParam};
   when?: string;
@@ -399,6 +430,56 @@ export class ActionBuilder extends ActivityBuilder {
   }
 }
 
+class IteratorBuilder extends ActivityBuilder {
+  private readonly iter: Iteration;
+  private readonly producer: ActivityBuilder;
+
+  constructor(name: string, iter: Iteration, producer: ActivityBuilder, parent?: ActivityBuilder) {
+    super(name, parent);
+    this.iter = iter;
+    this.producer = producer;
+  }
+
+  amendWithInferredTypes(inferred: StringHash) {
+    super.amendWithInferredTypes(inferred);
+    this.producer.amendWithInferredTypes(inferred);
+  }
+
+  protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
+    let style: string;
+    let values: Value;
+    let vars: string[] = [];
+    if (this.iter.variable !== undefined) {
+      vars.push(this.iter.variable);
+    }
+    if (isEach(this.iter)) {
+      style = 'each';
+      values = this.iter.each;
+      if (this.iter.variables !== undefined) {
+        vars = this.iter.variables;
+      }
+    } else if (isRange(this.iter)) {
+      style = 'range';
+      values = [this.iter.from, this.iter.to];
+    } else if (isTimes(this.iter)) {
+      style = 'times';
+      values = this.iter.times;
+    } else {
+      style = 'unknown';
+      values = null;
+    }
+
+    const pd = this.producer.build(sb, inferred);
+    return {
+      style: 'iterator',
+      iterationStyle: style,
+      over: values,
+      variables: vars.map((vr) => new Parameter(vr)),
+      producer: pd
+    };
+  }
+}
+
 export class WorkflowBuilder extends ActivityBuilder {
   private readonly activities: ActivityBuilder[] = [];
 
@@ -415,25 +496,26 @@ export class WorkflowBuilder extends ActivityBuilder {
   fromMap(m: WorkflowMap) {
     super.fromMap(m);
     for (const [n, a] of Object.entries(m.activities)) {
+      let ab: ActivityBuilder;
       switch (a.style) {
         case 'action':
-          const ab = new ActionBuilder(n, this);
-          ab.fromMap((a as ActionMap));
-          this.activities.push(ab);
+          ab = new ActionBuilder(n, this);
           break;
         case 'resource':
-          const rb = new ResourceBuilder(n, this);
-          rb.fromMap((a as ResourceMap));
-          this.activities.push(rb);
+          ab = new ResourceBuilder(n, this);
           break;
         case 'workflow':
-          const wb = new WorkflowBuilder(n, this);
-          wb.fromMap((a as WorkflowMap));
-          this.activities.push(wb);
+          ab = new WorkflowBuilder(n, this);
           break;
         default:
           throw new Error(`activity hash for ${this.qualifyName(n)} has no valid style`);
       }
+      ab.fromMap(a);
+      if (a.iteration !== undefined) {
+        ab = new IteratorBuilder(n, a.iteration, ab, this);
+        ab.fromMap(a);
+      }
+      this.activities.push(ab);
     }
   }
 
