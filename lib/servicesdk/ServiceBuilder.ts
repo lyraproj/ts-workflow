@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as util from 'util';
 
+import {logger} from '..';
 import {Data} from '../pcore/Data';
 import {Deferred} from '../pcore/Deferred';
 import {Parameter} from '../pcore/Parameter';
@@ -67,6 +68,24 @@ export interface TopLevelActivityMap extends ActivityMap {
   source: string;
 }
 
+export function serveWorkflow(a: TopLevelActivityMap&WorkflowMap) {
+  const sb = new ServiceBuilder('Lyra::TypeScript::Service');
+  sb.workflow(a);
+  sb.serve();
+}
+
+export function serveAction(a: TopLevelActivityMap&ActionMap) {
+  const sb = new ServiceBuilder('Lyra::TypeScript::Service');
+  sb.action(a);
+  sb.serve();
+}
+
+export function serveResource(a: TopLevelActivityMap&ResourceMap) {
+  const sb = new ServiceBuilder('Lyra::TypeScript::Service');
+  sb.resource(a);
+  sb.serve();
+}
+
 export function action(a: ActionMap): ActionMap {
   a.style = 'action';
   return a;
@@ -112,6 +131,12 @@ export class ServiceBuilder {
 
   action(am: ActionMap&TopLevelActivityMap) {
     this.fromMap(am.source, ActionBuilder, action(am));
+  }
+
+  serve() {
+    const server = this.build(global);
+    logger.info('Starting the server', 'serverId', server.serviceId.toString());
+    server.start();
   }
 
   private fromMap<T extends ActivityBuilder>(
