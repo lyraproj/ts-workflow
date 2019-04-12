@@ -21,15 +21,15 @@ We will soon create an example state handler in TypeScript.
 [lib/servicesdk]() - this is the only library that workflow writers need to interface with.  For example:
 
 ```TypeScript
+import {resource, serveWorkflow} from 'lyra-workflow';
 
-const wf = {
+// Import types used in workflow here, i.e. something similar to:
+// import * as Aws from './types/Aws';
+
+serveWorkflow({
   source: __filename,
   // define workflow here, see examples for how to do this
-}
-const sb = new ServiceBuilder('My::Service');
-sb.workflow(wf);
-const server = sb.build(global);
-console.log(server.metadata());
+});
 ```
 
 ## Testing
