@@ -596,7 +596,7 @@ proto.puppet.service.StateRequest.prototype.toObject = function(opt_includeInsta
 proto.puppet.service.StateRequest.toObject = function(includeInstance, msg) {
   var f, obj = {
     identifier: jspb.Message.getFieldWithDefault(msg, 1, ""),
-    input: (f = msg.getInput()) && datapb_data_pb.Data.toObject(includeInstance, f)
+    parameters: (f = msg.getParameters()) && datapb_data_pb.Data.toObject(includeInstance, f)
   };
 
   if (includeInstance) {
@@ -640,7 +640,7 @@ proto.puppet.service.StateRequest.deserializeBinaryFromReader = function(msg, re
     case 2:
       var value = new datapb_data_pb.Data;
       reader.readMessage(value,datapb_data_pb.Data.deserializeBinaryFromReader);
-      msg.setInput(value);
+      msg.setParameters(value);
       break;
     default:
       reader.skipField();
@@ -678,7 +678,7 @@ proto.puppet.service.StateRequest.serializeBinaryToWriter = function(message, wr
       f
     );
   }
-  f = message.getInput();
+  f = message.getParameters();
   if (f != null) {
     writer.writeMessage(
       2,
@@ -705,23 +705,23 @@ proto.puppet.service.StateRequest.prototype.setIdentifier = function(value) {
 
 
 /**
- * optional puppet.datapb.Data input = 2;
+ * optional puppet.datapb.Data parameters = 2;
  * @return {?proto.puppet.datapb.Data}
  */
-proto.puppet.service.StateRequest.prototype.getInput = function() {
+proto.puppet.service.StateRequest.prototype.getParameters = function() {
   return /** @type{?proto.puppet.datapb.Data} */ (
     jspb.Message.getWrapperField(this, datapb_data_pb.Data, 2));
 };
 
 
 /** @param {?proto.puppet.datapb.Data|undefined} value */
-proto.puppet.service.StateRequest.prototype.setInput = function(value) {
+proto.puppet.service.StateRequest.prototype.setParameters = function(value) {
   jspb.Message.setWrapperField(this, 2, value);
 };
 
 
-proto.puppet.service.StateRequest.prototype.clearInput = function() {
-  this.setInput(undefined);
+proto.puppet.service.StateRequest.prototype.clearParameters = function() {
+  this.setParameters(undefined);
 };
 
 
@@ -729,7 +729,7 @@ proto.puppet.service.StateRequest.prototype.clearInput = function() {
  * Returns whether this field is set.
  * @return {!boolean}
  */
-proto.puppet.service.StateRequest.prototype.hasInput = function() {
+proto.puppet.service.StateRequest.prototype.hasParameters = function() {
   return jspb.Message.getField(this, 2) != null;
 };
 

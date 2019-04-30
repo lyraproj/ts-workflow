@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
 import {extractTypeInfo} from "../lib/servicesdk/ManifestTypes";
-import {activityName} from "../lib";
+import {stepName} from "../lib";
 
 describe('inferWorkflowTypes', () => {
   it('finds types', () => {
@@ -11,27 +11,27 @@ describe('inferWorkflowTypes', () => {
     expect(tr.inferredTypes).toEqual(
       {
         vpc: {
-          input: {
+          parameters: {
             tags: "{[s: string]: string}"
           },
           type: "Aws::Vpc"
         },
         vpcDone: {
-          input: {
+          parameters: {
             vpcId: "string"
           },
-          output: {
+          returns: {
             vpcOk: "boolean"
           }
         },
         subnet: {
-          input: {
+          parameters: {
             tags: "{[s: string]: string}", vpcId: "string"
           },
           type: "Aws::Subnet"
         },
         routeTable: {
-          input: {
+          parameters: {
             tags: "{[s: string]: string}", vpcId: "string"
           },
           type: "Aws::RouteTable"

@@ -10,7 +10,7 @@ export enum Namespace {
   NsDefinition = 'definition',
   NsHandler = 'handler',
   NsService = 'service',
-  NsActivity = 'activity',
+  NsStep = 'step',
   NsAllocator = 'allocator',
   NsConstructor = 'constructor'
 }
