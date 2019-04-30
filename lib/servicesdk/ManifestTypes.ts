@@ -34,7 +34,7 @@ export function extractTypeInfoByPath(fileName: string): StringHash|null {
 
 /**
  * extractTypeInfo transpiles a manifest in order to extract type information of
- * input arguments and actions and resources.
+ * parameters arguments and actions and resources.
  * @param fileName
  * @param sources
  * @param options
@@ -72,7 +72,7 @@ export function extractTypeInfo(
         params[m.name.getText()] = m.type === undefined ? 'any' : m.type.getText();
       }
     }
-    collect('output', params);
+    collect('returns', params);
   };
 
   const traversePtypeBody = (n: ts.Node) => {
@@ -102,7 +102,7 @@ export function extractTypeInfo(
   // Traverses the action hash
   const traverseActionProperty = (pa: ts.PropertyAssignment) => {
     if (pa.name.getText() === 'do' && ts.isFunctionLike(pa.initializer)) {
-      // Infer type information about input and state type
+      // Infer type information about parameters and state type
       const f = (pa.initializer as ts.FunctionLikeDeclaration);
 
       // The type of the initializer must be the type of the state itself.
@@ -112,13 +112,13 @@ export function extractTypeInfo(
         s.getReturnType().symbol.declarations.forEach(traverseActionReturn);
       });
 
-      // Extract the parameter types. Those are the types for the resource input
+      // Extract the parameter types. Those are the types for the resource parameters
       // variables
       const params: {[s: string]: string} = {};
       f.parameters.forEach((p) => {
         params[p.name.getText()] = p.type === undefined ? 'any' : p.type.getText();
       });
-      collect('input', params);
+      collect('parameters', params);
 
       // Return type of do function must be a map,
     }
@@ -127,7 +127,7 @@ export function extractTypeInfo(
   // Traverses the resource hash
   const traverseResourceProperty = (pa: ts.PropertyAssignment) => {
     if (pa.name.getText() === 'state' && ts.isFunctionLike(pa.initializer)) {
-      // Infer type information about input and state type
+      // Infer type information about parameters and state type
       const f = (pa.initializer as ts.FunctionLikeDeclaration);
 
       // The type of the initializer must be the type of the state itself.
@@ -137,19 +137,19 @@ export function extractTypeInfo(
         s.getReturnType().symbol.declarations.forEach(traverseObjectType);
       });
 
-      // Extract the parameter types. Those are the types for the resource input
+      // Extract the parameter types. Those are the types for the resource parameters
       // variables
       const params: {[s: string]: string} = {};
       f.parameters.forEach((p) => {
         params[p.name.getText()] = p.type === undefined ? 'any' : p.type.getText();
       });
-      collect('input', params);
+      collect('parameters', params);
     }
   };
 
   // Traverses the workflow hash
   const traverseWorkflowProperty = (n: ts.PropertyAssignment) => {
-    if (n.name.getText() !== 'activities') {
+    if (n.name.getText() !== 'steps') {
       return;
     }
 
@@ -187,7 +187,7 @@ export function extractTypeInfo(
 
   const traverse = (o: ts.Node) => {
     if (ts.isObjectLiteralExpression(o) && hasSourceEntry(o)) {
-      switch (getActivityStyle(o)) {
+      switch (getStepStyle(o)) {
         case 'resource':
           traverseResource(o);
           return;
@@ -240,11 +240,11 @@ function hasSourceEntry(ol: ts.ObjectLiteralExpression): boolean {
   return false;
 }
 
-function getActivityStyle(ol: ts.ObjectLiteralExpression): 'workflow'|'resource'|'action'|null {
+function getStepStyle(ol: ts.ObjectLiteralExpression): 'workflow'|'resource'|'action'|null {
   for (const p of ol.properties) {
     if (p.name !== undefined && (isIdentifier(p.name) || isStringLiteral(p.name))) {
       switch (p.name.text) {
-        case 'activities':
+        case 'steps':
           return 'workflow';
         case 'state':
           return 'resource';

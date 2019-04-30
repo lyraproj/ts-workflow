@@ -8,13 +8,13 @@ function makeRouteTable(vpcId: string, tags: {[s: string]: string}): Aws.RouteTa
 
 serveWorkflow({
   source: __filename,
-  input: {tags: {type: 'StringHash', lookup: 'aws.tags'}},
+  parameters: {tags: {type: 'StringHash', lookup: 'aws.tags'}},
 
-  output: {vpcId: 'string', subnetId: 'string', routeTableId: 'string'},
+  returns: {vpcId: 'string', subnetId: 'string', routeTableId: 'string'},
 
-  activities: {
+  steps: {
     vpc: resource({
-      output: 'vpcId',
+      returns: 'vpcId',
       state: (tags: {[s: string]: string}): Aws.Vpc => new Aws.Vpc({
         amazonProvidedIpv6CidrBlock: false,
         cidrBlock: '192.168.0.0/16',
@@ -34,7 +34,7 @@ serveWorkflow({
     }),
 
     subnet: resource({
-      output: 'subnetId',
+      returns: 'subnetId',
       state: (vpcId: string, tags: {[s: string]: string}) => new Aws.Subnet({
         vpcId,
         tags,
@@ -48,7 +48,7 @@ serveWorkflow({
     }),
 
     routeTable: resource({
-      output: {routeTableId: 'string'},
+      returns: {routeTableId: 'string'},
       state: (vpcId: string, tags: {[s: string]: string}) => makeRouteTable(vpcId, tags)
     })
   }

@@ -14,7 +14,7 @@ import {extractTypeInfoByPath} from './ManifestTypes';
 import {Service} from './Service';
 
 /**
- * A StateProducer produces a state based on input variables
+ * A StateProducer produces a state based on parameters variables
  */
 export type StateProducer = Function;
 
@@ -28,49 +28,48 @@ export type OutParam = {
   alias?: string
 };
 
-export interface Iteration {
-  variable?: string;
+export interface Repeat {
+  as?: string|string[];
 }
 
-export interface Times extends Iteration {
+export interface Times extends Repeat {
   times: InParam|number;
 }
 
-function isTimes(value: Iteration): value is Times {
+function isTimes(value: Repeat): value is Times {
   return (value as Times).times !== undefined;
 }
 
-export interface Range extends Iteration {
+export interface Range extends Repeat {
   from: InParam|number;
   to: InParam|number;
 }
 
-function isRange(value: Iteration): value is Range {
+function isRange(value: Repeat): value is Range {
   return (value as Range).to !== undefined;
 }
 
-export interface Each extends Iteration {
+export interface Each extends Repeat {
   each: InParam|DataArray|StringDataMap;
-  variables?: string[];
 }
 
-function isEach(value: Iteration): value is Each {
+function isEach(value: Repeat): value is Each {
   return (value as Each).each !== undefined;
 }
 
 /**
- * The ActivityMap contains the properties common to all Activities
+ * The StepMap contains the properties common to all Steps
  */
-export interface ActivityMap {
+export interface StepMap {
   name?: string;
   style?: 'action'|'resource'|'workflow';
-  iteration?: Each|Range|Times;
-  input?: string|string[]|{[s: string]: string | InParam};
-  output?: string|string[]|{[s: string]: string | OutParam};
+  repeat?: Each|Range|Times;
+  parameters?: string|string[]|{[s: string]: string | InParam};
+  returns?: string|string[]|{[s: string]: string | OutParam};
   when?: string;
 }
 
-export function isActivityMap(m: ActivityMap): m is ActivityMap {
+export function isStepMap(m: StepMap): m is StepMap {
   const s = m.style;
   return s === 'action' || s === 'resource' || s === 'workflow';
 }
@@ -78,40 +77,40 @@ export function isActivityMap(m: ActivityMap): m is ActivityMap {
 /**
  * The ActionMap contains the properties of a workflow action.
  */
-export interface ActionMap extends ActivityMap {
+export interface ActionMap extends StepMap {
   do: Function;
 }
 
 /**
  * The ResourceMap contains the properties of a workflow resource.
  */
-export interface ResourceMap extends ActivityMap {
+export interface ResourceMap extends StepMap {
   externalId?: string;
   state: StateProducer;
   type?: string;
 }
 
-export interface WorkflowMap extends ActivityMap {
-  activities: {[s: string]: ActivityMap};
+export interface WorkflowMap extends StepMap {
+  steps: {[s: string]: StepMap};
 }
 
-export interface TopLevelActivityMap extends ActivityMap {
+export interface TopLevelStepMap extends StepMap {
   source: string;
 }
 
-export function serveWorkflow(a: TopLevelActivityMap&WorkflowMap) {
+export function serveWorkflow(a: TopLevelStepMap&WorkflowMap) {
   const sb = new ServiceBuilder('Lyra::TypeScript::Service');
   sb.workflow(a);
   sb.serve();
 }
 
-export function serveAction(a: TopLevelActivityMap&ActionMap) {
+export function serveAction(a: TopLevelStepMap&ActionMap) {
   const sb = new ServiceBuilder('Lyra::TypeScript::Service');
   sb.action(a);
   sb.serve();
 }
 
-export function serveResource(a: TopLevelActivityMap&ResourceMap) {
+export function serveResource(a: TopLevelStepMap&ResourceMap) {
   const sb = new ServiceBuilder('Lyra::TypeScript::Service');
   sb.resource(a);
   sb.serve();
@@ -132,7 +131,7 @@ export function workflow(a: WorkflowMap): WorkflowMap {
   return a;
 }
 
-export function activityName(fileName: string): string {
+export function stepName(fileName: string): string {
   // TODO: Take file name relative to 'workflow' directory and create
   //  a qualified name based on that
   return path.basename(fileName, '.js');
@@ -152,15 +151,15 @@ export class ServiceBuilder {
     return new Service(nsBase, this, 2000, 21000);
   }
 
-  workflow(wm: WorkflowMap&TopLevelActivityMap) {
+  workflow(wm: WorkflowMap&TopLevelStepMap) {
     this.fromMap(wm.source, WorkflowBuilder, workflow(wm));
   }
 
-  resource(rm: ResourceMap&TopLevelActivityMap) {
+  resource(rm: ResourceMap&TopLevelStepMap) {
     this.fromMap(rm.source, ResourceBuilder, resource(rm));
   }
 
-  action(am: ActionMap&TopLevelActivityMap) {
+  action(am: ActionMap&TopLevelStepMap) {
     this.fromMap(am.source, ActionBuilder, action(am));
   }
 
@@ -170,9 +169,8 @@ export class ServiceBuilder {
     server.start();
   }
 
-  private fromMap<T extends ActivityBuilder>(
-      source: string, C: {new(n: string, p?: ActivityBuilder): T}, map: ActivityMap): void {
-    const an = activityName(source);
+  private fromMap<T extends StepBuilder>(source: string, C: {new(n: string, p?: StepBuilder): T}, map: StepMap): void {
+    const an = stepName(source);
     const ab = new C(an);
     ab.fromMap(map);
     this.definitions.push(ab.build(this, extractTypeInfoByPath(source)));
@@ -199,29 +197,29 @@ export class Definition implements PcoreObject {
   }
 }
 
-export abstract class ActivityBuilder {
-  private readonly parent: ActivityBuilder|null;
+export abstract class StepBuilder {
+  private readonly parent: StepBuilder|null;
   private name: string;
   private in ?: {[s: string]: Parameter};
   private out?: {[s: string]: Parameter};
   private guard?: string;
 
-  constructor(name: string, parent?: ActivityBuilder) {
+  constructor(name: string, parent?: StepBuilder) {
     this.name = name;
     this.parent = parent === undefined ? null : parent;
   }
 
   amendWithInferredTypes(inferred: StringHash) {
     if (this.in === undefined) {
-      const ii = inferred['input'];
+      const ii = inferred['parameters'];
       if (ii !== undefined) {
-        this.input(ii as {[s: string]: string});
+        this.parameters(ii as {[s: string]: string});
       }
     }
     if (this.out === undefined) {
-      const io = inferred['output'];
+      const io = inferred['returns'];
       if (io !== undefined) {
-        this.output(io as {[s: string]: string});
+        this.returns(io as {[s: string]: string});
       }
     }
   }
@@ -234,18 +232,18 @@ export abstract class ActivityBuilder {
     return this.parent !== null ? this.parent.qualifyName(this.name) : this.name;
   }
 
-  fromMap(m: ActivityMap) {
+  fromMap(m: StepMap) {
     if (m.name !== undefined) {
       this.name = m.name;
     }
     if (m.when !== undefined) {
       this.when(m.when);
     }
-    if (m.input !== undefined) {
-      this.input(m.input);
+    if (m.parameters !== undefined) {
+      this.parameters(m.parameters);
     }
-    if (m.output !== undefined) {
-      this.output(m.output);
+    if (m.returns !== undefined) {
+      this.returns(m.returns);
     }
   }
 
@@ -253,7 +251,7 @@ export abstract class ActivityBuilder {
     this.guard = guard;
   }
 
-  input(params: string|string[]|{[s: string]: string | InParam}) {
+  parameters(params: string|string[]|{[s: string]: string | InParam}) {
     const ps = this.convertParams(true, params);
     if (this.in === undefined) {
       this.in = ps;
@@ -262,7 +260,7 @@ export abstract class ActivityBuilder {
     }
   }
 
-  output(params: string|string[]|{[s: string]: string | OutParam}) {
+  returns(params: string|string[]|{[s: string]: string | OutParam}) {
     const ps = this.convertParams(false, params);
     if (this.out === undefined) {
       this.out = ps;
@@ -306,21 +304,21 @@ export abstract class ActivityBuilder {
             type = new Type(value['type'] as string);
           }
 
-          // Input parameters can have lookup, output parameters can have alias.
+          // Parameters parameters can have lookup, returns parameters can have alias.
           let alu: Value;
           if (isIn) {
             const luv = (value as InParam).lookup;
             if (luv !== undefined) {
               alu = new Deferred('lookup', luv);
             } else {
-              throw new Error(`illegal input parameter assignment for parameter ${key}: ${value.toString()}`);
+              throw new Error(`illegal parameters parameter assignment for parameter ${key}: ${value.toString()}`);
             }
           } else {
             const av = (value as OutParam).alias;
             if (av !== undefined) {
               alu = av;
             } else {
-              throw new Error(`illegal input parameter assignment for parameter ${key}: ${value.toString()}`);
+              throw new Error(`illegal parameters parameter assignment for parameter ${key}: ${value.toString()}`);
             }
           }
           result[key] = new Parameter(key, type, alu);
@@ -333,10 +331,10 @@ export abstract class ActivityBuilder {
   protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
     const props: StringHash = {};
     if (this.in !== undefined) {
-      props['input'] = Object.values(this.in);
+      props['parameters'] = Object.values(this.in);
     }
     if (this.out !== undefined) {
-      props['output'] = Object.values(this.out);
+      props['returns'] = Object.values(this.out);
     }
     if (this.guard !== undefined) {
       props['when'] = this.guard;
@@ -345,7 +343,7 @@ export abstract class ActivityBuilder {
   }
 }
 
-export class ResourceBuilder extends ActivityBuilder {
+export class ResourceBuilder extends StepBuilder {
   private extId?: string;
   private resourceType?: string;
   private stateProducer?: StateProducer;
@@ -403,7 +401,7 @@ export class ResourceBuilder extends ActivityBuilder {
   }
 }
 
-export class ActionBuilder extends ActivityBuilder {
+export class ActionBuilder extends StepBuilder {
   private actionFunction?: Function;
 
   do
@@ -430,13 +428,13 @@ export class ActionBuilder extends ActivityBuilder {
   }
 }
 
-class IteratorBuilder extends ActivityBuilder {
-  private readonly iter: Iteration;
-  private readonly producer: ActivityBuilder;
+class RepeatBuilder extends StepBuilder {
+  private readonly rpt: Repeat;
+  private readonly producer: StepBuilder;
 
-  constructor(name: string, iter: Iteration, producer: ActivityBuilder, parent?: ActivityBuilder) {
+  constructor(name: string, rpt: Repeat, producer: StepBuilder, parent?: StepBuilder) {
     super(name, parent);
-    this.iter = iter;
+    this.rpt = rpt;
     this.producer = producer;
   }
 
@@ -448,44 +446,47 @@ class IteratorBuilder extends ActivityBuilder {
   protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
     let style: string;
     let values: Value;
-    let vars: string[] = [];
-    if (this.iter.variable !== undefined) {
-      vars.push(this.iter.variable);
-    }
-    if (isEach(this.iter)) {
+    if (isEach(this.rpt)) {
       style = 'each';
-      values = this.iter.each;
-      if (this.iter.variables !== undefined) {
-        vars = this.iter.variables;
-      }
-    } else if (isRange(this.iter)) {
+      values = this.rpt.each;
+    } else if (isRange(this.rpt)) {
       style = 'range';
-      values = [this.iter.from, this.iter.to];
-    } else if (isTimes(this.iter)) {
+      values = [this.rpt.from, this.rpt.to];
+    } else if (isTimes(this.rpt)) {
       style = 'times';
-      values = this.iter.times;
+      values = this.rpt.times;
     } else {
       style = 'unknown';
       values = null;
     }
 
     const pd = this.producer.build(sb, inferred);
-    return {
-      style: 'iterator',
-      iterationStyle: style,
+    const def: StringHash = {
+      style: 'repeat',
+      repeatStyle: style,
       over: values,
-      variables: vars.map((vr) => new Parameter(vr)),
-      producer: pd
+      producer: pd,
     };
+
+    if (this.rpt.as !== undefined) {
+      let vars: Parameter[];
+      if (Array.isArray(this.rpt.as)) {
+        vars = this.rpt.as.map((vr) => new Parameter(vr));
+      } else {
+        vars = [new Parameter(this.rpt.as)];
+      }
+      def['variables'] = vars;
+    }
+    return def;
   }
 }
 
-export class WorkflowBuilder extends ActivityBuilder {
-  private readonly activities: ActivityBuilder[] = [];
+export class WorkflowBuilder extends StepBuilder {
+  private readonly steps: StepBuilder[] = [];
 
   amendWithInferredTypes(inferred: StringHash) {
     super.amendWithInferredTypes(inferred);
-    this.activities.forEach(a => {
+    this.steps.forEach(a => {
       const sub = inferred[a.getLeafName()];
       if (isHash(sub)) {
         a.amendWithInferredTypes(sub);
@@ -495,8 +496,8 @@ export class WorkflowBuilder extends ActivityBuilder {
 
   fromMap(m: WorkflowMap) {
     super.fromMap(m);
-    for (const [n, a] of Object.entries(m.activities)) {
-      let ab: ActivityBuilder;
+    for (const [n, a] of Object.entries(m.steps)) {
+      let ab: StepBuilder;
       switch (a.style) {
         case 'action':
           ab = new ActionBuilder(n, this);
@@ -508,38 +509,38 @@ export class WorkflowBuilder extends ActivityBuilder {
           ab = new WorkflowBuilder(n, this);
           break;
         default:
-          throw new Error(`activity hash for ${this.qualifyName(n)} has no valid style`);
+          throw new Error(`step hash for ${this.qualifyName(n)} has no valid style`);
       }
       ab.fromMap(a);
-      if (a.iteration !== undefined) {
-        ab = new IteratorBuilder(n, a.iteration, ab, this);
+      if (a.repeat !== undefined) {
+        ab = new RepeatBuilder(n, a.repeat, ab, this);
         ab.fromMap(a);
       }
-      this.activities.push(ab);
+      this.steps.push(ab);
     }
   }
 
   action(name: string, bf: (rb: ActionBuilder) => void) {
     const rb = new ActionBuilder(name, this);
     bf(rb);
-    this.activities.push(rb);
+    this.steps.push(rb);
   }
 
   resource(name: string, bf: (rb: ResourceBuilder) => void) {
     const rb = new ResourceBuilder(name, this);
     bf(rb);
-    this.activities.push(rb);
+    this.steps.push(rb);
   }
 
   workflow(name: string, bf: (rb: WorkflowBuilder) => void) {
     const rb = new WorkflowBuilder(name, this);
     bf(rb);
-    this.activities.push(rb);
+    this.steps.push(rb);
   }
 
   protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
     const props = super.definitionProperties(sb, inferred);
-    props['activities'] = this.activities.map(ab => ab.build(sb, inferred));
+    props['steps'] = this.steps.map(ab => ab.build(sb, inferred));
     props['style'] = 'workflow';
     return props;
   }

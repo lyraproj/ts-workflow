@@ -91,10 +91,10 @@ export class StateRequest extends jspb.Message {
     setIdentifier(value: string): void;
 
 
-    hasInput(): boolean;
-    clearInput(): void;
-    getInput(): datapb_data_pb.Data | undefined;
-    setInput(value?: datapb_data_pb.Data): void;
+    hasParameters(): boolean;
+    clearParameters(): void;
+    getParameters(): datapb_data_pb.Data | undefined;
+    setParameters(value?: datapb_data_pb.Data): void;
 
 
     serializeBinary(): Uint8Array;
@@ -110,6 +110,6 @@ export class StateRequest extends jspb.Message {
 export namespace StateRequest {
     export type AsObject = {
         identifier: string,
-        input?: datapb_data_pb.Data.AsObject,
+        parameters?: datapb_data_pb.Data.AsObject,
     }
 }

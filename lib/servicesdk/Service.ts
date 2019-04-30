@@ -76,8 +76,8 @@ export class Service {
     for (const [k, v] of Object.entries(sb.actionFunctions)) {
       cbs[k] = {
         do: (...args: Value[]): Value => {
-          const input = args[0] as StringMap;
-          return Service.callWithNamedArgs(v, input);
+          const parameters = args[0] as StringMap;
+          return Service.callWithNamedArgs(v, parameters);
         }
       };
     }
@@ -114,8 +114,8 @@ export class Service {
 
       state: (call: ServerUnaryCall<StateRequest>, callback: sendUnaryData<Data>) => {
         const name = call.request.getIdentifier();
-        const input = Service.fromData(this.context, call.request.getInput()) as StringMap;
-        callback(null, Service.toData(this.context, this.state(name, input)));
+        const parameters = Service.fromData(this.context, call.request.getParameters()) as StringMap;
+        callback(null, Service.toData(this.context, this.state(name, parameters)));
       }
     });
   }
@@ -136,12 +136,12 @@ export class Service {
     return [null, this.definitions];
   }
 
-  state(name: string, input: StringMap|null): Value {
+  state(name: string, parameters: StringMap|null): Value {
     const f = this.stateProducers[name];
     if (f === undefined) {
       throw new Error(`unable to find state producer for ${name}`);
     }
-    return Service.callWithNamedArgs(f, input);
+    return Service.callWithNamedArgs(f, parameters);
   }
 
   start() {
@@ -166,19 +166,19 @@ export class Service {
     this.server.addService(HealthService, grpcHealthCheck);
   }
 
-  private static callWithNamedArgs(f: Function, input: StringMap|null): Value {
+  private static callWithNamedArgs(f: Function, parameters: StringMap|null): Value {
     const pns = Service.parameterNames(f);
     const args = new Array<Value>();
-    if (input === null) {
+    if (parameters === null) {
       if (pns.length > 0) {
-        throw Error(`state cannot be produced. Missing input parameter ${pns[0]}`);
+        throw Error(`state cannot be produced. Missing parameters parameter ${pns[0]}`);
       }
     } else {
       for (let i = 0; i < pns.length; i++) {
         const pn = pns[i];
-        const v = input.get(pn);
+        const v = parameters.get(pn);
         if (v === undefined) {
-          throw Error(`state cannot be produced. Missing input parameter ${pn}`);
+          throw Error(`state cannot be produced. Missing parameters parameter ${pn}`);
         }
         args.push(v);
       }
