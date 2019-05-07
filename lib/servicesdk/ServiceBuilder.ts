@@ -62,7 +62,7 @@ function isEach(value: Repeat): value is Each {
  */
 export interface StepMap {
   name?: string;
-  style?: 'action'|'resource'|'workflow';
+  style?: 'action'|'resource'|'reference'|'workflow';
   repeat?: Each|Range|Times;
   parameters?: string|string[]|{[s: string]: string | InParam};
   returns?: string|string[]|{[s: string]: string | OutParam};
@@ -94,12 +94,18 @@ export interface WorkflowMap extends StepMap {
   steps: {[s: string]: StepMap};
 }
 
+export interface ReferenceMap extends StepMap {
+  // Parameters are for aliasing only here, so OutParam instead of InParam
+  parameters?: string|string[]|{[s: string]: string | OutParam};
+  reference: string;
+}
+
 export interface TopLevelStepMap extends StepMap {
   source: string;
 }
 
 export function serveWorkflow(a: TopLevelStepMap&WorkflowMap) {
-  const sb = new ServiceBuilder('Lyra::TypeScript::Service');
+  const sb = new ServiceBuilder('Lyra::TypeScript::Service::');
   sb.workflow(a);
   sb.serve();
 }
@@ -116,6 +122,12 @@ export function serveResource(a: TopLevelStepMap&ResourceMap) {
   sb.serve();
 }
 
+export function serveReference(a: TopLevelStepMap&ReferenceMap) {
+  const sb = new ServiceBuilder('Lyra::TypeScript::Service');
+  sb.reference(a);
+  sb.serve();
+}
+
 export function action(a: ActionMap): ActionMap {
   a.style = 'action';
   return a;
@@ -128,6 +140,11 @@ export function resource(a: ResourceMap): ResourceMap {
 
 export function workflow(a: WorkflowMap): WorkflowMap {
   a.style = 'workflow';
+  return a;
+}
+
+export function reference(a: ReferenceMap): ReferenceMap {
+  a.style = 'reference';
   return a;
 }
 
@@ -157,6 +174,10 @@ export class ServiceBuilder {
 
   resource(rm: ResourceMap&TopLevelStepMap) {
     this.fromMap(rm.source, ResourceBuilder, resource(rm));
+  }
+
+  reference(rm: ReferenceMap&TopLevelStepMap) {
+    this.fromMap(rm.source, ReferenceBuilder, reference(rm));
   }
 
   action(am: ActionMap&TopLevelStepMap) {
@@ -428,6 +449,28 @@ export class ActionBuilder extends StepBuilder {
   }
 }
 
+export class ReferenceBuilder extends StepBuilder {
+  private reference?: string;
+
+  referenceTo(reference: string) {
+    this.reference = reference;
+  }
+
+  protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
+    const props = super.definitionProperties(sb, inferred);
+    props['style'] = 'reference';
+    if (this.reference !== undefined) {
+      props['reference'] = this.reference;
+    }
+    return props;
+  }
+
+  fromMap(m: ReferenceMap) {
+    super.fromMap(m);
+    this.referenceTo(m.reference);
+  }
+}
+
 class RepeatBuilder extends StepBuilder {
   private readonly rpt: Repeat;
   private readonly producer: StepBuilder;
@@ -528,6 +571,12 @@ export class WorkflowBuilder extends StepBuilder {
 
   resource(name: string, bf: (rb: ResourceBuilder) => void) {
     const rb = new ResourceBuilder(name, this);
+    bf(rb);
+    this.steps.push(rb);
+  }
+
+  reference(name: string, bf: (rb: ReferenceBuilder) => void) {
+    const rb = new ReferenceBuilder(name, this);
     bf(rb);
     this.steps.push(rb);
   }
