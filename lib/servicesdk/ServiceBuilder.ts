@@ -105,7 +105,7 @@ export interface TopLevelStepMap extends StepMap {
 }
 
 export function serveWorkflow(a: TopLevelStepMap&WorkflowMap) {
-  const sb = new ServiceBuilder('Lyra::TypeScript::Service::');
+  const sb = new ServiceBuilder('Lyra::TypeScript::Service');
   sb.workflow(a);
   sb.serve();
 }
