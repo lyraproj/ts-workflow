@@ -71,7 +71,7 @@ export interface StepMap {
 
 export function isStepMap(m: StepMap): m is StepMap {
   const s = m.style;
-  return s === 'action' || s === 'resource' || s === 'workflow';
+  return s === 'action' || s === 'call' || s === 'resource' || s === 'workflow';
 }
 
 /**
