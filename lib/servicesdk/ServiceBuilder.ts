@@ -62,7 +62,7 @@ function isEach(value: Repeat): value is Each {
  */
 export interface StepMap {
   name?: string;
-  style?: 'action'|'resource'|'reference'|'workflow';
+  style?: 'action'|'resource'|'call'|'workflow';
   repeat?: Each|Range|Times;
   parameters?: string|string[]|{[s: string]: string | InParam};
   returns?: string|string[]|{[s: string]: string | OutParam};
@@ -94,10 +94,10 @@ export interface WorkflowMap extends StepMap {
   steps: {[s: string]: StepMap};
 }
 
-export interface ReferenceMap extends StepMap {
+export interface CallMap extends StepMap {
   // Parameters are for aliasing only here, so OutParam instead of InParam
   parameters?: string|string[]|{[s: string]: string | OutParam};
-  reference: string;
+  call: string;
 }
 
 export interface TopLevelStepMap extends StepMap {
@@ -122,9 +122,9 @@ export function serveResource(a: TopLevelStepMap&ResourceMap) {
   sb.serve();
 }
 
-export function serveReference(a: TopLevelStepMap&ReferenceMap) {
+export function serveCall(a: TopLevelStepMap&CallMap) {
   const sb = new ServiceBuilder('Lyra::TypeScript::Service');
-  sb.reference(a);
+  sb.call(a);
   sb.serve();
 }
 
@@ -143,8 +143,8 @@ export function workflow(a: WorkflowMap): WorkflowMap {
   return a;
 }
 
-export function reference(a: ReferenceMap): ReferenceMap {
-  a.style = 'reference';
+export function call(a: CallMap): CallMap {
+  a.style = 'call';
   return a;
 }
 
@@ -176,8 +176,8 @@ export class ServiceBuilder {
     this.fromMap(rm.source, ResourceBuilder, resource(rm));
   }
 
-  reference(rm: ReferenceMap&TopLevelStepMap) {
-    this.fromMap(rm.source, ReferenceBuilder, reference(rm));
+  call(rm: CallMap&TopLevelStepMap) {
+    this.fromMap(rm.source, CallBuilder, call(rm));
   }
 
   action(am: ActionMap&TopLevelStepMap) {
@@ -449,25 +449,25 @@ export class ActionBuilder extends StepBuilder {
   }
 }
 
-export class ReferenceBuilder extends StepBuilder {
-  private reference?: string;
+export class CallBuilder extends StepBuilder {
+  private call?: string;
 
-  referenceTo(reference: string) {
-    this.reference = reference;
+  callTo(call: string) {
+    this.call = call;
   }
 
   protected definitionProperties(sb: ServiceBuilder, inferred: StringHash|null): StringHash {
     const props = super.definitionProperties(sb, inferred);
-    props['style'] = 'reference';
-    if (this.reference !== undefined) {
-      props['reference'] = this.reference;
+    props['style'] = 'call';
+    if (this.call !== undefined) {
+      props['call'] = this.call;
     }
     return props;
   }
 
-  fromMap(m: ReferenceMap) {
+  fromMap(m: CallMap) {
     super.fromMap(m);
-    this.referenceTo(m.reference);
+    this.callTo(m.call);
   }
 }
 
@@ -575,8 +575,8 @@ export class WorkflowBuilder extends StepBuilder {
     this.steps.push(rb);
   }
 
-  reference(name: string, bf: (rb: ReferenceBuilder) => void) {
-    const rb = new ReferenceBuilder(name, this);
+  call(name: string, bf: (rb: CallBuilder) => void) {
+    const rb = new CallBuilder(name, this);
     bf(rb);
     this.steps.push(rb);
   }
