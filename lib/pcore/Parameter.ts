@@ -7,10 +7,10 @@ import {StringHash, Value} from './Util';
 export class Parameter implements PcoreValue {
   readonly name: string;
   readonly type: Type;
+  readonly alias?: string;
   readonly value?: Value;
-  readonly captures?: boolean;
 
-  constructor(name: string, type?: string|Type, value?: Value, captures?: boolean) {
+  constructor(name: string, type?: string|Type, value?: Value, alias?: string) {
     this.name = name;
     if (type === undefined) {
       type = anyType;
@@ -20,7 +20,7 @@ export class Parameter implements PcoreValue {
 
     this.type = type;
     this.value = value;
-    this.captures = captures;
+    this.alias = alias;
   }
 
   [util.inspect.custom](depth: number, options: util.InspectOptions) {
@@ -28,7 +28,7 @@ export class Parameter implements PcoreValue {
   }
 
   __ptype(): string {
-    return 'Parameter';
+    return 'Lyra::Parameter';
   }
 
   __pvalue(): StringHash {
@@ -36,11 +36,8 @@ export class Parameter implements PcoreValue {
     if (this.value !== undefined) {
       m['value'] = this.value;
     }
-    if (this.value === null) {
-      m['has_value'] = true;
-    }
-    if (this.captures === true) {
-      m['captures_rest'] = true;
+    if (this.alias !== undefined) {
+      m['alias'] = this.alias;
     }
     return m;
   }

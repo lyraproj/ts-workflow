@@ -326,23 +326,24 @@ export abstract class StepBuilder {
           }
 
           // Parameters parameters can have lookup, returns parameters can have alias.
-          let alu: Value;
+          let val: Value|undefined;
+          let alias: string|undefined;
           if (isIn) {
             const luv = (value as InParam).lookup;
             if (luv !== undefined) {
-              alu = new Deferred('lookup', luv);
+              val = new Deferred('lookup', luv);
             } else {
               throw new Error(`illegal parameters parameter assignment for parameter ${key}: ${value.toString()}`);
             }
           } else {
             const av = (value as OutParam).alias;
             if (av !== undefined) {
-              alu = av;
+              alias = av;
             } else {
               throw new Error(`illegal parameters parameter assignment for parameter ${key}: ${value.toString()}`);
             }
           }
-          result[key] = new Parameter(key, type, alu);
+          result[key] = new Parameter(key, type, val, alias);
         }
       }
     }
