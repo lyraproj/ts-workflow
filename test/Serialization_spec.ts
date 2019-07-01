@@ -119,7 +119,7 @@ describe('Serializer', () => {
 
     const createdObj = collector.value();
     const expectedObj = new Map(Object.entries({
-      __ptype: 'Parameter',
+      __ptype: 'Lyra::Parameter',
       name: 'x',
       type: new Map(Object.entries({
         __ptype: 'Type',
